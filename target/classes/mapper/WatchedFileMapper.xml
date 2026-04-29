@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.WatchedFileMapper">
+
+    <resultMap id="BaseResultMap" type="WatchedFile">
+        <id column="id" property="id"/>
+        <result column="folder_id" property="folderId"/>
+        <result column="file_path" property="filePath"/>
+        <result column="file_name" property="fileName"/>
+        <result column="first_seen_time" property="firstSeenTime"/>
+        <result column="first_weather" property="firstWeather"/>
+        <result column="commit_count" property="commitCount"/>
+        <result column="last_commit_time" property="lastCommitTime"/>
+        <result column="last_message" property="lastMessage"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, folder_id, file_path, first_seen_time,first_weather,commit_count,last_commit_time,last_message, created_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT IGNORE INTO watched_file (folder_id, file_path, file_name, first_seen_time,first_weather,commit_count,last_commit_time,last_message, created_at)
+        VALUES (#{folderId}, #{filePath}, #{fileName}, #{firstSeenTime}, #{firstWeather}, #{commitCount}, #{lastCommitTime}, #{lastMessage}, #{createdAt})
+    </insert>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM watched_file
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM watched_file
+        WHERE id = #{id}
+    </select>
+    <select id="selectByFilePath" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM watched_file
+        WHERE file_path = #{filePath}
+    </select>
+    <select id="selectFilesWithLastCommit" resultType="com.filejournal.model.WatchedFileWithLastCommit">
+        SELECT 
+            wf.id,
+            wf.folder_id,
+            wf.file_path,
+            wf.file_name,
+            wf.first_seen_time,
+            wf.first_weather,
+            wf.commit_count,
+            wf.last_commit_time,
+            wf.last_message,
+            wf.created_at
+        FROM watched_file wf
+        WHERE wf.folder_id = #{folderId}
+        ORDER BY wf.last_commit_time DESC, wf.created_at DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM watched_file WHERE id = #{id}
+    </delete>
+
+    <select id="countByFolderId" resultType="int">
+        SELECT COUNT(*) FROM watched_file WHERE folder_id = #{folderId}
+    </select>
+
+
+    <update id="update" parameterType="com.filejournal.model.WatchedFile">
+        UPDATE watched_file
+        SET commit_count = #{commitCount},
+            first_seen_time = #{firstSeenTime},
+            first_weather = #{firstWeather},
+            last_commit_time = #{lastCommitTime},
+            last_message = #{lastMessage}
+        WHERE id = #{id}
+    </update>
+</mapper>

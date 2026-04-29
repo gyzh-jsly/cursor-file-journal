@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${currentFolder != null and currentFolder.folderName != null and !#strings.isEmpty(currentFolder.folderName)} ? |${currentFolder.folderName} - 文件日记| : '文件日记'">文件日记</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .fj-mail-layout {
+            display: flex;
+            flex-wrap: wrap;
+            min-height: calc(100vh - 56px);
+            align-items: stretch;
+        }
+        .fj-sidebar {
+            flex: 0 0 250px;
+            width: 250px;
+            max-width: 100%;
+            background: #fff;
+            border-right: 1px solid #e9ecef;
+            overflow-y: auto;
+        }
+        .fj-stream {
+            flex: 0 0 400px;
+            width: 400px;
+            max-width: 100%;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            min-height: 320px;
+        }
+        .fj-preview {
+            flex: 1 1 200px;
+            min-width: 0;
+            background: #fff;
+        }
+        @media (max-width: 1199.98px) {
+            .fj-sidebar {
+                flex: 0 0 100%;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+                max-height: 240px;
+            }
+            .fj-stream {
+                flex: 0 0 100%;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+            .fj-preview {
+                flex: 1 1 100%;
+                min-height: 200px;
+            }
+        }
+        @media (min-width: 1200px) {
+            .fj-sidebar, .fj-stream, .fj-preview {
+                min-height: calc(100vh - 56px);
+            }
+        }
+        .fj-folder-link {
+            display: block;
+            padding: 0.65rem 1rem;
+            color: #212529;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: background .15s ease, border-color .15s ease;
+        }
+        .fj-folder-link:hover {
+            background: #f1f3f5;
+            color: #0d6efd;
+        }
+        .fj-folder-link.active {
+            background: #e7f1ff;
+            border-left-color: #0d6efd;
+            color: #0a58ca;
+            font-weight: 500;
+        }
+        .fj-stream-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .fj-file-row {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: background .12s ease;
+        }
+        .fj-file-row:hover {
+            background: #f8f9fa;
+        }
+        .fj-file-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid px-3">
+        <a class="navbar-brand fw-semibold" href="/">文件日记</a>
+        <div class="navbar-nav">
+            <a class="nav-link text-white-50" href="/">首页</a>
+        </div>
+    </div>
+</nav>
+
+<div class="fj-mail-layout">
+    <!-- 左侧：文件夹列表 -->
+    <aside class="fj-sidebar">
+        <div class="px-3 py-3 border-bottom bg-white sticky-top">
+            <div class="small text-secondary text-uppercase fw-semibold letter-spacing-1">监视文件夹</div>
+        </div>
+        <nav class="py-1" th:if="${folders != null and !folders.isEmpty()}">
+            <a th:each="f : ${folders}"
+               th:href="@{/folder/view/{id}(id=${f.id})}"
+               class="fj-folder-link"
+               th:classappend="${currentFolder != null and f.id == currentFolder.id} ? 'active'">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <span class="text-truncate" style="max-width: 160px;"
+                          th:text="${f.folderName != null and !#strings.isEmpty(f.folderName)} ? ${f.folderName} : ${f.folderPath}">文件夹</span>
+                    <span class="badge rounded-pill text-bg-secondary flex-shrink-0"
+                          th:text="${folderFileCounts != null ? folderFileCounts.get(f.id) : 0}">0</span>
+                </div>
+            </a>
+        </nav>
+        <p class="small text-muted px-3 py-4 mb-0" th:if="${folders == null or folders.isEmpty()}">暂无监视文件夹，请添加。</p>
+    </aside>
+
+    <!-- 中间：聚合流 -->
+    <section class="fj-stream">
+        <header class="bg-white border-bottom px-3 py-2 d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+                添加文件夹
+            </button>
+            <div class="vr d-none d-sm-block text-secondary"></div>
+            <h2 class="h6 mb-0 text-truncate flex-grow-1" th:if="${currentFolder != null}"
+                th:text="${currentFolder.folderName != null and !#strings.isEmpty(currentFolder.folderName)} ? ${currentFolder.folderName} : ${currentFolder.folderPath}">
+                当前文件夹
+            </h2>
+        </header>
+        <div class="fj-stream-body">
+            <th:block th:if="${files != null and !files.isEmpty()}">
+                <div class="fj-file-row" th:each="file : ${files}">
+                    <div class="d-flex gap-2 align-items-start">
+                        <i class="bi bi-file-earmark-text text-primary fs-5 flex-shrink-0 mt-1"></i>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                <span class="fw-medium text-truncate" th:text="${file.fileName != null ? file.fileName : file.filePath}">文件名</span>
+                                <span class="badge bg-primary rounded-pill"
+                                      th:text="${file.commitCount != null ? file.commitCount : 0} + ' 次'">0 次</span>
+                            </div>
+                            <div class="small text-muted mb-1">
+                                <i class="bi bi-clock me-1"></i>
+                                <span th:if="${file.lastCommitTime != null}"
+                                      th:text="${#temporals.format(file.lastCommitTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+                                <span th:if="${file.lastCommitTime == null and file.createdAt != null}"
+                                      th:text="${#temporals.format(file.createdAt, 'yyyy-MM-dd HH:mm')} + '（首次记录）'">时间</span>
+                                <span th:if="${file.lastCommitTime == null and file.createdAt == null}">—</span>
+                            </div>
+                            <div class="small text-body-secondary text-truncate" style="max-width: 100%;"
+                                 th:title="${file.lastMessage}">
+                                <span class="text-muted">备注：</span>
+                                <span th:text="${file.lastMessage != null and !#strings.isEmpty(file.lastMessage)} ? ${file.lastMessage} : '无'">无</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </th:block>
+            <div class="p-4 text-center text-muted small" th:if="${files == null or files.isEmpty()}">
+                当前文件夹下暂无文件活动记录。
+            </div>
+        </div>
+    </section>
+
+    <!-- 右侧：档案详情预留 -->
+    <aside class="fj-preview d-flex flex-column">
+        <div class="px-3 py-3 border-bottom bg-light">
+            <span class="small text-secondary fw-semibold">档案详情</span>
+        </div>
+        <div class="flex-grow-1 d-flex align-items-center justify-content-center p-4 text-center text-muted small">
+            <div>
+                <i class="bi bi-layout-sidebar-reverse d-block fs-1 mb-2 opacity-25"></i>
+                此区域预留用于展示选中文件的档案详情，敬请期待。
+            </div>
+        </div>
+    </aside>
+</div>
+
+<div class="modal fade" id="addFolderModal" tabindex="-1" aria-labelledby="addFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fs-6" id="addFolderModalLabel">添加监视文件夹</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <form action="/folder/add" method="post">
+                <div class="modal-body pt-2">
+                    <div class="mb-3">
+                        <label for="folderPath" class="form-label small text-secondary mb-1">文件夹路径</label>
+                        <input type="text" class="form-control form-control-sm" id="folderPath" name="folderPath"
+                               placeholder="例如 D:\Projects\my-repo" required autocomplete="off">
+                    </div>
+                    <div class="mb-0">
+                        <label for="folderName" class="form-label small text-secondary mb-1">文件夹别名 <span class="text-muted fw-normal">（选填）</span></label>
+                        <input type="text" class="form-control form-control-sm" id="folderName" name="folderName"
+                               placeholder="便于识别的显示名称" autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary btn-sm">提交</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

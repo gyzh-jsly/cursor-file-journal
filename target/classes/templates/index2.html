@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文脉日记 · 首页</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f5f7fa;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* 顶部导航栏 */
+        .top-navbar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            letter-spacing: 1px;
+        }
+        .app-title i {
+            color: #4a90e2;
+            margin-right: 8px;
+        }
+        .user-avatar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 30px;
+            transition: background 0.2s;
+        }
+        .user-avatar:hover {
+            background: #f0f2f5;
+        }
+        .user-avatar i {
+            font-size: 1.8rem;
+            color: #6c757d;
+        }
+        /* T型布局主体：左侧边栏 + 右侧内容 */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        /* 左侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            border-radius: 10px;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.15s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .nav-item i {
+            font-size: 1.3rem;
+            margin-right: 14px;
+            width: 24px;
+            color: #718096;
+        }
+        .nav-item:hover {
+            background: #f7f9fc;
+            color: #2d3748;
+        }
+        .nav-item.active {
+            background: #e8f0fe;
+            color: #4a90e2;
+        }
+        .nav-item.active i {
+            color: #4a90e2;
+        }
+        /* 右侧内容区 */
+        .content-area {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            background: #fafbfc;
+        }
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1e293b;
+        }
+        /* 功能卡片网格 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #edf2f7;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        }
+        .card-icon {
+            font-size: 2.5rem;
+            color: #4a90e2;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        .card-stats {
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        .card-stats .highlight {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-right: 6px;
+        }
+        .card-action {
+            margin-top: 8px;
+        }
+        .btn-outline-primary {
+            border-radius: 30px;
+            padding: 8px 20px;
+        }
+        /* 推荐区域 */
+        .recommend-section {
+            margin-top: 32px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px 24px;
+            border: 1px solid #edf2f7;
+        }
+        .recommend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+        .recommend-quote {
+            font-style: italic;
+            color: #475569;
+            padding: 12px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .layout-tip {
+            margin-top: 12px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- 顶部导航栏：仅系统名 + 我的账号 -->
+    <header class="top-navbar">
+        <div class="app-title">
+            <i class="bi bi-journal-bookmark-fill"></i>
+            文脉日记
+        </div>
+        <div class="user-avatar">
+            <i class="bi bi-person-circle"></i>
+            <span>我的账号</span>
+            <i class="bi bi-chevron-down" style="font-size: 0.9rem;"></i>
+        </div>
+    </header>
+
+    <!-- T型主体：左侧边栏 + 右侧内容 -->
+    <div class="main-layout">
+        <!-- 左侧边栏 -->
+        <aside class="sidebar">
+            <ul class="nav-menu">
+                <a class="nav-item active" th:href="@{/}">
+                    <i class="bi bi-folder2-open"></i>
+                    首页
+                </a>
+                <a class="nav-item active" th:href="@{/}" id="navFileDiary">
+                    <i class="bi bi-folder2-open"></i>
+                    文件日记
+                </a>
+                <a class="nav-item" th:href="@{/diary/write}">
+                    <i class="bi bi-pencil-square"></i>
+                    写日记
+                </a>
+                <a class="nav-item" th:href="@{/diary/archive}">
+                    <i class="bi bi-archive"></i>
+                    往期存档
+                </a>
+            </ul>
+        </aside>
+
+        <!-- 右侧内容区：三个功能卡片统计 + 推荐 -->
+        <main class="content-area" id="mainContentArea">
+            <h2 class="page-title">首页</h2>
+             
+
+            <!-- 功能卡片网格 -->
+            <div class="card-grid">
+                
+                <!-- 卡片1：文件日记 -->
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <i class="bi bi-folder2-open"></i>
+                    </div>
+                    <div class="card-title">文件日记</div>
+                    <!-- <div class="card-stats">
+                        <span class="highlight" th:text="${folderCount != null ? folderCount : 0}">0</span> 
+                        个监视目录
+                        <span th:if="${folderCount != null && folderCount > 0}" class="text-success ms-2">
+                            <i class="bi bi-check-circle-fill"></i> 已激活
+                        </span>
+                    </div> -->
+                    <!-- 文件夹列表标题 -->
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-folder2-open text-warning me-2"></i>
+                        <h5 class="mb-0">我的监视文件夹</h5>
+                        <span class="badge bg-secondary ms-2" th:text="${folders != null ? #lists.size(folders) : 0}">0</span>
+                    </div>
+                    <div class="card-action">
+                        <!-- <a th:href="@{/folder/view}" class="btn btn-outline-primary">
+                            <i class="bi bi-folder-symlink"></i> 打开文件夹
+                        </a> -->
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+                            <i class="bi bi-folder-plus"></i> 添加文件夹
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 卡片2：写日记 -->
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div class="card-title">写日记</div>
+                    <div class="card-stats">
+                        累计 <span class="highlight" th:text="${diaryCount != null ? diaryCount : 0}">0</span> 篇
+                        <div th:if="${todayDiaryCount == null || todayDiaryCount == 0}" class="text-warning mt-1">
+                            <i class="bi bi-exclamation-circle"></i> 今天还未写日记
+                        </div>
+                        <div th:if="${todayDiaryCount != null && todayDiaryCount > 0}" class="text-success mt-1">
+                            <i class="bi bi-check-circle"></i> 今日已完成
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <a th:href="@{/diary/write}" class="btn btn-primary" style="border-radius: 30px;">
+                            <i class="bi bi-plus-lg"></i> 写日记
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 卡片3：往期存档 -->
+                <div class="feature-card">
+                    <div class="card-icon">
+                        <i class="bi bi-archive"></i>
+                    </div>
+                    <div class="card-title">往期存档</div>
+                    <div class="card-stats">
+                        最早一篇
+                        <div class="mt-1" th:if="${oldestDiaryDate != null}">
+                            <i class="bi bi-calendar3"></i> 
+                            <span th:text="${#dates.format(oldestDiaryDate, 'yyyy-MM-dd')}">2026-01-01</span>
+                        </div>
+                        <div th:if="${oldestDiaryDate == null}" class="text-muted mt-1">
+                            暂无存档日记
+                        </div>
+                    </div>
+                    <div class="card-action">
+                        <a th:href="@{/diary/archive}" class="btn btn-outline-secondary" style="border-radius: 30px;">
+                            <i class="bi bi-clock-history"></i> 浏览存档
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 今日推荐 / 布局提示 -->
+            <div class="recommend-section">
+                <div class="recommend-title">
+                    <i class="bi bi-lightbulb text-warning me-2"></i>今日推荐
+                </div>
+                <div class="recommend-quote">
+                    “今天完成了 T 型布局的设计，感觉这种结构很适合日记类应用，顶部导航清晰，侧边栏快捷操作。”
+                </div>
+                <div class="layout-tip">
+                    <i class="bi bi-layout-three-columns me-1"></i>
+                    T 型布局：顶部导航 + 下方左右分栏 — 适合大多数后台系统和内容应用。
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- 添加文件夹模态框 -->
+<div class="modal fade" id="addFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" th:action="@{/folder/add}">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-folder-plus text-primary me-2"></i>添加监视文件夹
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">文件夹路径 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="folderPath" 
+                               placeholder="例如：D:\我的文档\项目" required>
+                        <small class="text-muted">请输入文件夹的完整绝对路径</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">文件夹别名（可选）</label>
+                        <input type="text" class="form-control" name="folderName" 
+                               placeholder="不填则使用文件夹名">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> 添加
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 处理导航切换（可选，用于高亮和异步加载）
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 如果点击的是文件日记，保持在当前页（或异步刷新）
+            if (this.id === 'navFileDiary') {
+                // 已经是当前页，不需要额外操作
+            }
+        });
+    });
+</script>
+</body>
+</html>

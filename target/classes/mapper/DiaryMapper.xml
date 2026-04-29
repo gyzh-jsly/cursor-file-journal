@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.DiaryMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.Diary" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO diary (content, created_at, edit_deadline, last_modified_at, modify_count,
+                           first_weather, is_pinned, diary_date)
+        VALUES (#{content}, #{createdAt}, #{editDeadline}, #{lastModifiedAt}, #{modifyCount},
+                #{firstWeather}, #{isPinned}, #{diaryDate})
+    </insert>
+
+    <update id="update" parameterType="com.filejournal.model.Diary">
+        UPDATE diary
+        SET content = #{content},
+            last_modified_at = #{lastModifiedAt},
+            modify_count = #{modifyCount},
+            is_pinned = #{isPinned}
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.filejournal.model.Diary">
+        SELECT * FROM diary WHERE id = #{id}
+    </select>
+
+    <select id="selectByDate" resultType="com.filejournal.model.Diary">
+        SELECT id, LEFT(content, 30) AS content_preview, created_at, last_modified_at,
+               modify_count, first_weather, is_pinned, diary_date
+        FROM diary
+        WHERE diary_date = #{date}
+        <choose>
+            <when test="sort == 'modified'">
+                ORDER BY is_pinned DESC, last_modified_at DESC
+            </when>
+            <otherwise>
+                ORDER BY is_pinned DESC, created_at DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCalendarData" resultType="map">
+        SELECT diary_date, COUNT(*) AS count
+        FROM diary
+        WHERE YEAR(diary_date) = #{year} AND MONTH(diary_date) = #{month}
+        GROUP BY diary_date
+    </select>
+
+    <select id="selectYearStats" resultType="map">
+        SELECT MONTH(diary_date) AS month, COUNT(*) AS count
+        FROM diary
+        WHERE YEAR(diary_date) = #{year}
+        GROUP BY MONTH(diary_date)
+    </select>
+</mapper>

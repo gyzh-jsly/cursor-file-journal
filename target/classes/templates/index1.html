@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件日记 · 首页</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .main-card {
+            margin-top: 80px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .folder-item {
+            transition: all 0.2s;
+        }
+        .folder-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+        .empty-state {
+            padding: 60px 0;
+            text-align: center;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card main-card">
+        <div class="card-header bg-white border-0 pt-4 pb-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-journal-bookmark-fill text-primary"></i> 
+                    文件日记
+                </h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+                    <i class="bi bi-folder-plus"></i> 添加文件夹
+                </button>
+            </div>
+            <p class="text-muted mt-2">记录每一次修改，记住每一刻初见</p>
+        </div>
+        
+        <div class="card-body">
+            <!-- 提示信息（成功/错误） -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> <span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- 文件夹列表标题 -->
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-folder2-open text-warning me-2"></i>
+                <h5 class="mb-0">我的监视文件夹</h5>
+                <span class="badge bg-secondary ms-2" th:text="${folders != null ? #lists.size(folders) : 0}">0</span>
+            </div>
+
+            <!-- 文件夹列表 -->
+            <div th:if="${folders != null && !folders.isEmpty()}">
+                <div class="list-group">
+                    <a th:each="folder : ${folders}" 
+                       th:href="@{/folder/view/{id}(id=${folder.id})}"
+                       class="list-group-item list-group-item-action folder-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-folder-fill text-warning me-2"></i>
+                                    <strong th:text="${folder.folderName}">文件夹名称</strong>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-folder-symlink"></i> 
+                                    <span th:text="${folder.folderPath}">D:\文档\</span>
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary rounded-pill">
+                                    <i class="bi bi-arrow-right"></i> 进入
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div th:unless="${folders != null && !folders.isEmpty()}" class="empty-state">
+                <i class="bi bi-folder-x"></i>
+                <h5>还没有监视任何文件夹</h5>
+                <p class="text-muted">点击上方"添加文件夹"按钮，开始记录你的文件变化</p>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white text-muted text-center py-3 border-0">
+            <small>📋 每次修改，都有痕迹</small>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件夹模态框 -->
+<div class="modal fade" id="addFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" th:action="@{/folder/add}">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-folder-plus text-primary me-2"></i>添加监视文件夹
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">文件夹路径 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="folderPath" 
+                               placeholder="例如：D:\我的文档\项目" required>
+                        <small class="text-muted">请输入文件夹的完整绝对路径</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">文件夹别名（可选）</label>
+                        <input type="text" class="form-control" name="folderName" 
+                               placeholder="不填则使用文件夹名">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> 添加
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

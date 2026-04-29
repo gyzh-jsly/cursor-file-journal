@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文脉日记 · 首页</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- detail 页面样式（仅在切换到文件日记时生效） -->
+    <link rel="stylesheet" href="/css/detail2.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f5f7fa;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .top-navbar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            letter-spacing: 1px;
+        }
+        .app-title i {
+            color: #4a90e2;
+            margin-right: 8px;
+        }
+        .user-avatar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 30px;
+            transition: background 0.2s;
+        }
+        .user-avatar:hover {
+            background: #f0f2f5;
+        }
+        .user-avatar i {
+            font-size: 1.8rem;
+            color: #6c757d;
+        }
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 260px;
+            background: white;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 12px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            border-radius: 10px;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.15s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .nav-item i {
+            font-size: 1.3rem;
+            margin-right: 14px;
+            width: 24px;
+            color: #718096;
+        }
+        .nav-item:hover {
+            background: #f7f9fc;
+            color: #2d3748;
+        }
+        .nav-item.active {
+            background: #e8f0fe;
+            color: #4a90e2;
+        }
+        .nav-item.active i {
+            color: #4a90e2;
+        }
+        /* 右侧内容区 */
+        .content-area {
+            flex: 1;
+            overflow: hidden;
+            background: #fafbfc;
+        }
+        /* 首页卡片视图 */
+        .home-view {
+            height: 100%;
+            overflow-y: auto;
+            padding: 24px 32px;
+        }
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1e293b;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #edf2f7;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        }
+        .card-icon {
+            font-size: 2.5rem;
+            color: #4a90e2;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        .card-stats {
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        .card-stats .highlight {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-right: 6px;
+        }
+        .card-action {
+            margin-top: 8px;
+        }
+        .btn-outline-primary {
+            border-radius: 30px;
+            padding: 8px 20px;
+        }
+        .recommend-section {
+            margin-top: 32px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px 24px;
+            border: 1px solid #edf2f7;
+        }
+        .recommend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+        .recommend-quote {
+            font-style: italic;
+            color: #475569;
+            padding: 12px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .layout-tip {
+            margin-top: 12px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        /* 文件日记视图（聚合流） */
+        .diary-view {
+            height: 100%;
+            display: none;
+        }
+        .diary-view.active {
+            display: block;
+        }
+        .diary-view .app-header {
+            display: none;
+        }
+        .diary-view .app-main {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- 顶部导航栏 -->
+    <header class="top-navbar">
+        <div class="app-title">
+            <i class="bi bi-journal-bookmark-fill"></i>
+            文脉日记
+        </div>
+        <div class="user-avatar">
+            <i class="bi bi-person-circle"></i>
+            <span>我的账号</span>
+            <i class="bi bi-chevron-down" style="font-size: 0.9rem;"></i>
+        </div>
+    </header>
+
+    <!-- T型主体 -->
+    <div class="main-layout">
+        <!-- 左侧导航 -->
+        <aside class="sidebar">
+            <ul class="nav-menu">
+                <a class="nav-item active" th:href="@{/}" id="navHome">
+                    <i class="bi bi-house-door"></i>
+                    首页
+                </a>
+                <a class="nav-item" th:href="@{/folder/view}" id="navFileDiary">
+                    <i class="bi bi-folder2-open"></i>
+                    文件日记
+                </a>
+                <a class="nav-item" href="#" id="navWriteDiary">
+                    <i class="bi bi-pencil-square"></i>
+                    写日记
+                </a>
+                <a class="nav-item" th:href="@{/diary/archive}">
+                    <i class="bi bi-archive"></i>
+                    往期存档
+                </a>
+            </ul>
+        </aside>
+
+        <!-- 右侧内容区：两个视图切换 -->
+        <main class="content-area">
+            <!-- 视图1：首页功能卡片 -->
+            <div id="homeView" class="home-view">
+                <h2 class="page-title">首页</h2>
+                <div class="card-grid">
+                    <!-- 文件日记卡片 -->
+                    <div class="feature-card">
+                        <div class="card-icon"><i class="bi bi-folder2-open"></i></div>
+                        <div class="card-title">文件日记</div>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-folder2-open text-warning me-2"></i>
+                            <h5 class="mb-0">我的监视文件夹</h5>
+                            <span class="badge bg-secondary ms-2" th:text="${folders != null ? #lists.size(folders) : 0}">0</span>
+                        </div>
+                        <div class="card-action">
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+                                <i class="bi bi-folder-plus"></i> 添加文件夹
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 写日记卡片 -->
+                    <div class="feature-card">
+                        <div class="card-icon"><i class="bi bi-pencil-square"></i></div>
+                        <div class="card-title">写日记</div>
+                        <div class="card-stats">
+                            累计 <span class="highlight" th:text="${diaryCount != null ? diaryCount : 0}">0</span> 篇
+                            <div th:if="${todayDiaryCount == null || todayDiaryCount == 0}" class="text-warning mt-1">
+                                <i class="bi bi-exclamation-circle"></i> 今天还未写日记
+                            </div>
+                            <div th:if="${todayDiaryCount != null && todayDiaryCount > 0}" class="text-success mt-1">
+                                <i class="bi bi-check-circle"></i> 今日已完成
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            <a th:href="@{/diary/write}" class="btn btn-primary" style="border-radius: 30px;">
+                                <i class="bi bi-plus-lg"></i> 写日记
+                            </a>
+                        </div>
+                    </div>
+                    <!-- 往期存档卡片 -->
+                    <div class="feature-card">
+                        <div class="card-icon"><i class="bi bi-archive"></i></div>
+                        <div class="card-title">往期存档</div>
+                        <div class="card-stats">
+                            最早一篇
+                            <div class="mt-1" th:if="${oldestDiaryDate != null}">
+                                <i class="bi bi-calendar3"></i>
+                                <span th:text="${#dates.format(oldestDiaryDate, 'yyyy-MM-dd')}">2026-01-01</span>
+                            </div>
+                            <div th:if="${oldestDiaryDate == null}" class="text-muted mt-1">暂无存档日记</div>
+                        </div>
+                        <div class="card-action">
+                            <a th:href="@{/diary/archive}" class="btn btn-outline-secondary" style="border-radius: 30px;">
+                                <i class="bi bi-clock-history"></i> 浏览存档
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="recommend-section">
+                    <div class="recommend-title"><i class="bi bi-lightbulb text-warning me-2"></i>今日推荐</div>
+                    <div class="recommend-quote">“今天完成了 T 型布局的设计，感觉这种结构很适合日记类应用。”</div>
+                    <div class="layout-tip"><i class="bi bi-layout-three-columns me-1"></i>T 型布局：顶部导航 + 下方左右分栏。</div>
+                </div>
+            </div>
+
+            <!-- 视图2：文件日记聚合流（初始隐藏） -->
+            <!-- 视图2：文件日记聚合流（初始隐藏） -->
+            <div id="diaryView" class="diary-view">
+                <div th:if="${currentFolder != null}" th:replace="folder/detail2 :: .app-container"></div>
+                <div th:unless="${currentFolder != null}" style="display: flex; align-items: center; justify-content: center; height: 100%; text-align: center; color: #6c757d;">
+                    <div>
+                        <i class="bi bi-folder-x" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <h5>暂无监视文件夹</h5>
+                        <p class="mb-3 text-secondary">点击下方按钮添加第一个文件夹</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal">
+                            <i class="bi bi-plus-lg"></i> 添加文件夹
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            
+            <!-- 标签页容器 -->
+            <div class="tab-container" style="height: 100%; display: flex; flex-direction: column;">
+                <!-- 标签导航 -->
+                <ul class="nav nav-tabs" id="diaryTabs" role="tablist" style="padding: 12px 16px 0; background: white; border-bottom: 1px solid #e9ecef;">
+                    <!-- 固定标签页：月历 -->
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="calendar-tab" data-bs-toggle="tab" 
+                                data-bs-target="#calendarContent" type="button" role="tab">
+                            <i class="bi bi-calendar3 me-1"></i> 写日记
+                        </button>
+                    </li>
+                    <!-- 动态打开的日记列表标签页会追加到这里 -->
+                </ul>
+                
+                <!-- 标签内容 -->
+                <div class="tab-content" id="diaryTabContent" style="flex: 1; overflow: hidden;">
+                    <!-- 固定标签页内容：月历 -->
+                    <div class="tab-pane fade show active" id="calendarContent" role="tabpanel" style="height: 100%;">
+                        <div th:replace="diary/calendar :: .calendar-container"></div>
+                    </div>
+                    <!-- 动态打开的日记列表内容会追加到这里 -->
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- 添加文件夹模态框 -->
+<div class="modal fade" id="addFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" th:action="@{/folder/add}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-folder-plus text-primary me-2"></i>添加监视文件夹</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">文件夹路径 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="folderPath" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">文件夹别名（可选）</label>
+                        <input type="text" class="form-control" name="folderName">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 记录修改模态框 -->
+<div class="modal fade" id="commitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>记录修改
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="commitFileId">
+                <div class="mb-3">
+                    <label class="form-label">文件</label>
+                    <div class="form-control bg-light" id="commitFileName">-</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">本次修改备注（可选）</label>
+                    <textarea class="form-control" id="commitMessage" rows="3" 
+                              placeholder="例如：修改了第三章内容、修正了错别字..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitCommit()">
+                    <i class="bi bi-check-lg"></i> 保存记录
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/detail2.js"></script>
+<script>
+    // 导航切换逻辑
+    const homeView = document.getElementById('homeView');
+    const diaryView = document.getElementById('diaryView');
+    const navHome = document.getElementById('navHome');
+    const navFileDiary = document.getElementById('navFileDiary');
+
+    // 切换到首页
+    navHome.addEventListener('click', function(e) {
+        e.preventDefault();
+        homeView.style.display = 'block';
+        diaryView.style.display = 'none';
+        setActive(this);
+        window.history.pushState({}, '', '/');
+    });
+
+    // 切换到文件日记
+    navFileDiary.addEventListener('click', function(e) {
+        e.preventDefault();
+        homeView.style.display = 'none';
+        diaryView.style.display = 'block';
+        setActive(this);
+        window.history.pushState({}, '', '/folder/view');
+        
+        // 如果聚合流未加载数据，可在此发起 Ajax 请求（可选）
+    });
+
+    function setActive(activeItem) {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        activeItem.classList.add('active');
+    }
+
+    // 根据当前 URL 初始化视图（处理浏览器前进后退）
+    if (window.location.pathname.startsWith('/folder/view')) {
+        homeView.style.display = 'none';
+        diaryView.style.display = 'block';
+        setActive(navFileDiary);
+    } else {
+        homeView.style.display = 'block';
+        diaryView.style.display = 'none';
+        setActive(navHome);
+    }
+
+    // 打开日记列表标签页
+    function openDiaryListTab(dateStr) {
+        // 检查是否已存在该日期的标签页
+        const existingTab = document.querySelector(`.diary-tab[data-date="${dateStr}"]`);
+        if (existingTab) {
+            // 切换到已有标签页
+            const tabInstance = bootstrap.Tab.getInstance(existingTab);
+            tabInstance.show();
+            return;
+        }
+        
+        // 创建新标签页
+        const tabId = 'diary-tab-' + dateStr.replace(/-/g, '');
+        const tabContentId = 'diary-content-' + dateStr.replace(/-/g, '');
+        
+        // 添加标签导航
+        const tabNav = document.createElement('li');
+        tabNav.className = 'nav-item';
+        tabNav.setAttribute('role', 'presentation');
+        tabNav.setAttribute('data-date', dateStr);
+        tabNav.classList.add('diary-tab');
+        tabNav.innerHTML = `
+            <button class="nav-link" id="${tabId}-tab" data-bs-toggle="tab" 
+                    data-bs-target="#${tabContentId}" type="button" role="tab">
+                ${dateStr}
+                <span class="btn-close btn-close-tab" style="margin-left: 8px; font-size: 0.7rem;" 
+                    onclick="event.stopPropagation(); closeTab('${tabId}')"></span>
+            </button>
+        `;
+        document.getElementById('diaryTabs').appendChild(tabNav);
+        
+        // 添加标签内容
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-pane fade';
+        tabContent.id = tabContentId;
+        tabContent.setAttribute('role', 'tabpanel');
+        tabContent.innerHTML = `<div class="diary-list-container" data-date="${dateStr}">加载中...</div>`;
+        document.getElementById('diaryTabContent').appendChild(tabContent);
+        
+        // 激活新标签页
+        const tab = new bootstrap.Tab(document.querySelector(`#${tabId}-tab`));
+        tab.show();
+        
+        // 加载内容
+        fetch(`/diary/list?date=${dateStr}`)
+            .then(res => res.text())
+            .then(html => {
+                document.querySelector(`#${tabContentId} .diary-list-container`).innerHTML = html;
+            });
+    }
+
+    // 关闭标签页
+    function closeTab(tabId) {
+        const tabElement = document.querySelector(`#${tabId}-tab`).parentElement;
+        const contentId = tabElement.querySelector('button').getAttribute('data-bs-target');
+        const contentElement = document.querySelector(contentId);
+        
+        // 如果关闭的是激活的标签页，先切换到前一个
+        if (tabElement.querySelector('button').classList.contains('active')) {
+            const prevTab = tabElement.previousElementSibling;
+            if (prevTab) {
+                new bootstrap.Tab(prevTab.querySelector('button')).show();
+            }
+        }
+        
+        tabElement.remove();
+        contentElement.remove();
+    }
+</script>
+</body>
+</html>

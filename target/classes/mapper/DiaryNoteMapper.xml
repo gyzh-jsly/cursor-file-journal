@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.DiaryNoteMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.DiaryNote" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO diary_note (diary_id, note, created_at)
+        VALUES (#{diaryId}, #{note}, #{createdAt})
+    </insert>
+
+    <select id="selectByDiaryId" resultType="com.filejournal.model.DiaryNote">
+        SELECT * FROM diary_note
+        WHERE diary_id = #{diaryId}
+        ORDER BY created_at DESC
+    </select>
+</mapper>
