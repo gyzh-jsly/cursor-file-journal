@@ -11,7 +11,7 @@ public interface DiaryService {
     Diary updateDiary(Integer id, String content, Boolean isPinned);
     Diary getDiary(Integer id);
     List<Diary> getDiariesByDate(LocalDate date, String sort);
-    Map<String, Integer> getCalendarData(Integer year, Integer month);
+    List<Map<String, Object>> getCalendarData(Integer year, Integer month);
     Map<String, Integer> getYearStats(Integer year);
     boolean canEdit(Diary diary);
     LocalDateTime calculateDeadline(LocalDateTime createdAt);

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>日记列表</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            font-family: "Segoe UI", "宋体", SimSun, serif;
+            background: #f4f3ef;
+            color: #2b2b2b;
+            margin: 0;
+            padding: 20px;
+        }
+        .diary-list-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2b2b2b;
+        }
+        .diary-card {
+            background: #fdfdfb;
+            border: 1px solid #b0a99f;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .diary-card:hover {
+            background: #e0dbd1;
+        }
+        .diary-card-preview {
+            font-size: 0.95rem;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        .diary-card-meta {
+            font-size: 0.8rem;
+            color: #6b5e53;
+        }
+        .diary-card-meta span {
+            margin-right: 16px;
+        }
+        .empty-state {
+            text-align: center;
+            color: #6b5e53;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+<div th:if="${diaries != null && !diaries.isEmpty()}">
+    <div class="diary-list-header">
+        📅 <span th:text="${date}">2026-05-05</span> · <span th:text="${#lists.size(diaries)} + '篇日记'">0篇日记</span>
+    </div>
+    <div th:each="diary : ${diaries}" class="diary-card" th:attr="onclick=|openDiaryDetail(${diary.id})|">
+        <div class="diary-card-preview" th:text="${diary.contentPreview}">预览内容...</div>
+        <div class="diary-card-meta">
+            <span th:text="${diary.firstWeather}">☀️ 晴</span>
+            <span th:if="${diary.modifyCount > 0}" th:text="'修改' + ${diary.modifyCount} + '次'">修改1次</span>
+        </div>
+    </div>
+</div>
+<div th:unless="${diaries != null && !diaries.isEmpty()}" class="empty-state">
+    <p>这一天还没有日记</p>
+</div>
+
+<script>
+
+</script>
+</body>
+</html>

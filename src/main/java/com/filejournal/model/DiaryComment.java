@@ -14,4 +14,6 @@ public class DiaryComment {
     private String comment;
     private LocalDateTime createdAt;
 
+    //扩展字段1个
+    private Integer endOffset;
 }

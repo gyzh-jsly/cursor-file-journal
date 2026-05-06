@@ -3,9 +3,11 @@ package com.filejournal.controller;
 import com.filejournal.model.Diary;
 import com.filejournal.model.DiaryComment;
 import com.filejournal.model.DiaryNote;
+import com.filejournal.model.ImportBatch;
 import com.filejournal.service.DiaryCommentService;
 import com.filejournal.service.DiaryNoteService;
 import com.filejournal.service.DiaryService;
+import com.filejournal.service.ImportBatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -13,6 +15,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,14 +26,14 @@ public class DiaryController {
 
     @Autowired
     private DiaryService diaryService;
-
     @Autowired
     private DiaryNoteService noteService;
-
     @Autowired
     private DiaryCommentService commentService;
+    @Autowired
+    private ImportBatchService batchService;
 
-    // 月历页面（固定标签页内容）
+    // 年历页面（固定标签页内容）
     @GetMapping("/calendar")
     public String calendar(Model model) {
         return "diary/calendar";
@@ -40,13 +44,28 @@ public class DiaryController {
     @ResponseBody
     public Map<String, Integer> getCalendarData(@RequestParam Integer year,
                                                  @RequestParam Integer month) {
-        return diaryService.getCalendarData(year, month);
+        List<Map<String, Object>> list = diaryService.getCalendarData(year, month);
+        Map<String,Integer> result = new HashMap<>();
+        for (Map<String,Object> m : list) {
+            String date = m.get("diary_date").toString();
+            Integer count = ((Number)m.get("count")).intValue();
+            result.put(date,count);
+        }
+        return result;
+    }
+
+    //年历跳月历（这个怎么和上面的获取月历数据很像啊，他们是不是可以结合起来？）
+    @GetMapping("/calendar/month")
+    public String calendarPage(@RequestParam Integer year, @RequestParam Integer month, Model model) {
+        model.addAttribute("year", year);
+        model.addAttribute("month", month);
+        return "diary/month-calendar";
     }
 
     @GetMapping("/calendar/content")
     public String calendarContent(Model model) {
         // 只返回挂历的内容片段，不包含完整 HTML 骨架
-        return "diary/calendar :: .calendar-container";
+        return "diary/calendar";
     }
 
     @GetMapping("/calendar/year-stats")
@@ -77,6 +96,10 @@ public class DiaryController {
         Diary diary = diaryService.getDiary(id);
         model.addAttribute("diary", diary);
         model.addAttribute("canEdit", diaryService.canEdit(diary));
+        model.addAttribute("createdAtStr", diary.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        if (diary.getLastModifiedAt() != null) {
+            model.addAttribute("modifiedAtStr", diary.getLastModifiedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        }
         return "diary/detail";
     }
 
@@ -128,4 +151,21 @@ public class DiaryController {
                                 @RequestParam String content) {
         return commentService.addComment(id, selectedText, startOffset, content);
     }
+
+
+    // 获取所有导入批次
+    @GetMapping("/import-batches")
+    @ResponseBody
+    public List<ImportBatch> listBatches() {
+        return batchService.getAllBatches();
+    }
+
+    // 删除导入批次
+    @DeleteMapping("/import-batch/{id}")
+    @ResponseBody
+    public String deleteBatch(@PathVariable Integer id) {
+        batchService.deleteBatch(id);
+        return "success";
+    }
+
 }

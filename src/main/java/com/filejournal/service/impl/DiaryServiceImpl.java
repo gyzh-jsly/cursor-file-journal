@@ -41,6 +41,8 @@ public class DiaryServiceImpl implements DiaryService {
         diary.setFirstWeather(weatherService.getCurrentWeather());
         diary.setIsPinned(isPinned != null && isPinned ? 1 : 0);
         diary.setDiaryDate(now.toLocalDate());
+        diary.setSourceType("WRITE");
+        diary.setIsFrozen(0);
         diaryMapper.insert(diary);
           
         // 1. 存入日记详情缓存（可选，如果后续有详情页再用）
@@ -82,7 +84,7 @@ public class DiaryServiceImpl implements DiaryService {
     }
 
     @Override
-    public Map<String, Integer> getCalendarData(Integer year, Integer month) {
+    public List<Map<String, Object>> getCalendarData(Integer year, Integer month) {
         return diaryMapper.selectCalendarData(year, month);
     }
 
