@@ -152,6 +152,14 @@ public class DiaryController {
         return commentService.addComment(id, selectedText, startOffset, content);
     }
 
+    //删除段评
+    @DeleteMapping("/{id}/comments/{commentId}")
+    @ResponseBody
+    public String deleteComment(@PathVariable Integer commentId) {
+        commentService.deleteComment(commentId);
+        return "success";
+    }
+
 
     // 获取所有导入批次
     @GetMapping("/import-batches")

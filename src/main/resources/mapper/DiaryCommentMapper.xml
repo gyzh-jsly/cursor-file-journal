@@ -4,12 +4,20 @@
 
     <insert id="insert" parameterType="com.filejournal.model.DiaryComment" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO diary_comment (diary_id, version, selected_text, start_offset,end_offset, comment, created_at)
-        VALUES (#{diaryId}, #{version}, #{selectedText}, #{startOffset},#{end_offset}, #{comment}, #{createdAt})
+        VALUES (#{diaryId}, #{version}, #{selectedText}, #{startOffset},#{endOffset}, #{comment}, #{createdAt})
     </insert>
 
     <select id="selectByDiaryId" resultType="com.filejournal.model.DiaryComment">
         SELECT * FROM diary_comment
         WHERE diary_id = #{diaryId}
         ORDER BY start_offset, created_at
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM diary_comment WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultType="com.filejournal.model.DiaryComment">
+        SELECT * FROM diary_comment WHERE id = #{id}
     </select>
 </mapper>

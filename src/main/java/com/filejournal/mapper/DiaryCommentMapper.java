@@ -9,4 +9,7 @@ import java.util.List;
 public interface DiaryCommentMapper {
     int insert(DiaryComment comment);
     List<DiaryComment> selectByDiaryId(@Param("diaryId") Integer diaryId);
+
+    int deleteById(Integer id);
+    DiaryComment selectById(Integer id);
 }

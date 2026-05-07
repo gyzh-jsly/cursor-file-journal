@@ -28,7 +28,7 @@ public class DiaryCommentServiceImpl implements DiaryCommentService {
             throw new IllegalArgumentException("日记不存在");
         }
 
-        // 2. 校验 startOffset 是否有效
+        // 2. 校验 startOffset 是否有效(话说，从前端页面操作真的会出现选中文字与偏移量不匹配吗？还是说，日记修改后需要判断)
         String fullContent = diary.getContent();
         if (startOffset < 0 || startOffset >= fullContent.length()) {
             throw new IllegalArgumentException("选中的文字位置无效");
@@ -43,9 +43,10 @@ public class DiaryCommentServiceImpl implements DiaryCommentService {
                                     
         DiaryComment comment = new DiaryComment();
         comment.setDiaryId(diaryId);
-        comment.setVersion(diary.getModifyCount());
+        comment.setVersion(diary.getModifyCount()); // 自动获取当前版本号
         comment.setSelectedText(selectedText);
         comment.setStartOffset(startOffset);
+        comment.setEndOffset(startOffset + selectedText.length());
         comment.setComment(content);
         comment.setCreatedAt(LocalDateTime.now());
         commentMapper.insert(comment);
@@ -55,5 +56,10 @@ public class DiaryCommentServiceImpl implements DiaryCommentService {
     @Override
     public List<DiaryComment> getCommentsByDiaryId(Integer diaryId) {
         return commentMapper.selectByDiaryId(diaryId);
+    }
+
+    @Override
+    public void deleteComment(Integer id) {
+        commentMapper.deleteById(id);
     }
 }
