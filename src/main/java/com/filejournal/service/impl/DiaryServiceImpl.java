@@ -59,9 +59,11 @@ public class DiaryServiceImpl implements DiaryService {
     @Transactional
     public Diary updateDiary(Integer id, String content, Boolean isPinned) {
         Diary diary = diaryMapper.selectById(id);
+        //正常使用怎么可能id会没有对应的diary。这是防御性编程。
         if (diary == null) {
             throw new IllegalArgumentException("日记不存在");
         }
+        //3 < 3，canEdit()返回false,!canEdit()返回true。
         if (!canEdit(diary)) {
             throw new IllegalStateException("日记已锁定或修改次数已达上限");
         }
@@ -69,7 +71,18 @@ public class DiaryServiceImpl implements DiaryService {
         diary.setLastModifiedAt(LocalDateTime.now());
         diary.setModifyCount(diary.getModifyCount() + 1);
         diary.setIsPinned(isPinned != null && isPinned ? 1 : 0);
+
+        // 修改后重新判断是否冻结
+        //什么时候canEditAfterUpdate()是false呢？>3或超时(!isAfter值是！true)。
+        if (!canEditAfterUpdate(diary)) {
+            diary.setIsFrozen(1);
+        }
         diaryMapper.update(diary);
+
+        // 清除缓存
+        String cacheKey = "diary:detail:" + id;
+        redisTemplate.delete(cacheKey);
+
         return diary;
     }
 
@@ -90,10 +103,14 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Override
     public boolean canEdit(Diary diary) {
+        //如果现在时间已经超过了截止修改时间，说明已经过了窗口期，不允许修改
         if (LocalDateTime.now().isAfter(diary.getEditDeadline())) {
             return false;
         }
         return diary.getModifyCount() < 3;
+    }
+    private boolean canEditAfterUpdate(Diary diary) {
+        return !LocalDateTime.now().isAfter(diary.getEditDeadline()) && diary.getModifyCount() < 3;
     }
 
     @Override
@@ -107,22 +124,6 @@ public class DiaryServiceImpl implements DiaryService {
     }
 
 	@Override
-	// public Map<Integer, Integer> getYearStats(Integer year) {
-    //     Map<Integer, Integer> result = new HashMap<>();
-    //     // 初始化1-12月为0
-    //     for (int m = 1; m <= 12; m++) {
-    //         result.put(m, 0);
-    //     }
-        
-    //     // 查询该年各月的日记篇数
-    //     List<Map<String, Object>> stats = diaryMapper.selectYearStats(year);
-    //     for (Map<String, Object> stat : stats) {
-    //         Integer month = (Integer) stat.get("month");
-    //         Long count = (Long) stat.get("count");
-    //         result.put(month, count.intValue());
-    //     }
-    //     return result;
-    // }
     @SuppressWarnings("unchecked")
     public Map<String, Integer> getYearStats(Integer year) {
         String cacheKey = "diary:year-stats:" + year;
@@ -140,7 +141,10 @@ public class DiaryServiceImpl implements DiaryService {
         
         // 2. 查数据库
         Map<String, Integer> result = new HashMap<>();
+        // 初始化1-12月为0
         for (int m = 1; m <= 12; m++) result.put(String.valueOf(m), 0);
+
+        // 查询该年各月的日记篇数
         List<Map<String, Object>> stats = diaryMapper.selectYearStats(year);
         for (Map<String, Object> stat : stats) {
             Integer month = (Integer) stat.get("month");
