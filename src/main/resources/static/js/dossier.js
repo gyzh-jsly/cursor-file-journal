@@ -268,6 +268,7 @@ function loadDiaryPane(pane) {
         .then(html => {
             pane.innerHTML = html;
             loadData();
+            if (!document.getElementById('yearSelect').options.length) renderYearSelect();
         });
 }
 
@@ -275,15 +276,15 @@ let currentYear = new Date().getFullYear();
 let calendarData = {};
 
 async function loadData() {
-    const res = await fetch(`/diary/calendar/year-stats?year=${currentYear}`);
-    calendarData = await res.json();
+    // const res = await fetch(`/diary/calendar/year-stats?year=${currentYear}`);
+    // calendarData = await res.json();
     renderYearGrid();
 }
 
-function renderYearGrid() {
-    document.getElementById('currentYearLabel').textContent = currentYear;
+async function renderYearGrid() {
+    // document.getElementById('currentYearLabel').textContent = currentYear;
     const grid = document.getElementById('yearGrid');
-    if (!(document.getElementById('currentYearLabel')) || !grid) return;
+    if (!grid) return;
     grid.innerHTML = '';
 
     const dayHeaders = ['一', '二', '三', '四', '五', '六', '日'];
@@ -323,18 +324,44 @@ function renderYearGrid() {
         }
 
         // 填充日期
-        for (let d = 1; d <= totalDays; d++) {
+        /*for (let d = 1; d <= totalDays; d++) {
             const dateStr = `${currentYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const count = calendarData[dateStr] || 0;
             const dayDiv = document.createElement('div');
             dayDiv.className = 'mini-day' + (count > 0 ? ' has-diary' : '');
-            dayDiv.textContent = d;
+            console.log("执行到这了吗？");
+            // dayDiv.textContent = d;
+            //我要有日记的日期高亮，dayDiv.textContent = d;替换为：
+            dayDiv.innerHTML = count > 0 ? `<span style="position:relative;">${d}<span style="position:absolute; top:0; right:1px; font-size:0.5rem; color:#4a90e2;">·${count}</span></span>` : d;
             if (count > 0) {
                 dayDiv.title = `${count}篇日记`;
                 // dayDiv.onclick = () => openMonthView(m);
                 // 不再设置 dayDiv.onclick，改由 initCalendarEvents 统一绑定
             }
             miniCal.appendChild(dayDiv);
+        }*/
+        // 获取该月哪些日期有日记
+        let monthData = {};
+        try {
+            const res = await fetch(`/diary/calendar/data?year=${currentYear}&month=${m}`);
+            monthData = await res.json();
+        } catch (e) {}
+
+        let monthTotal = 0;
+        for (let d = 1; d <= totalDays; d++) {
+            const dateStr = `${currentYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const count = monthData[dateStr] || 0;
+            monthTotal += count;
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'mini-day' + (count > 0 ? ' has-diary' : '');
+            dayDiv.textContent = d;
+            miniCal.appendChild(dayDiv);
+        }
+        // 月份有日记时给卡片加高亮
+        if (monthTotal > 0) {
+            monthCard.style.background = '#e8f0fe';
+            monthCard.style.borderColor = '#4a90e2';
         }
 
         monthCard.appendChild(miniCal);
@@ -342,6 +369,7 @@ function renderYearGrid() {
         bindMonthCardEvents();
     }
 }
+
 function bindMonthCardEvents() {
     document.querySelectorAll('.month-card').forEach(card => {
         card.onclick = function() {
@@ -352,9 +380,41 @@ function bindMonthCardEvents() {
     });
 }
 
-function changeYear(delta) {
+/*function changeYear(delta) {
     currentYear += delta;
     loadData();
+}*/
+function changeYearFromSelect() {
+    currentYear = parseInt(document.getElementById('yearSelect').value);
+    loadData();
+}
+
+async function renderYearSelect() {
+    const select = document.getElementById('yearSelect');
+    if (!select) return;
+
+    const now = new Date().getFullYear();
+    select.innerHTML = '';
+
+    for (let y = now - 10; y <= now; y++) {
+        try {
+            const res = await fetch(`/diary/calendar/year-stats?year=${y}`);
+            const stats = await res.json();
+            const totalCount = Object.values(stats).reduce((sum, c) => sum + c, 0);
+
+            const option = document.createElement('option');
+            option.value = y;
+            option.textContent = `${y}年` + (totalCount > 0 ? ` (${totalCount}篇)` : '');
+            if (y === now) option.selected = true;
+            select.appendChild(option);
+        } catch (e) {
+            const option = document.createElement('option');
+            option.value = y;
+            option.textContent = `${y}年`;
+            if (y === now) option.selected = true;
+            select.appendChild(option);
+        }
+    }
 }
 
 function openMonthView(month) {
@@ -390,12 +450,30 @@ function renderMonthGrid(month, data) {
         grid.appendChild(empty);
     }
     // 填充日期
-    for (let d = 1; d <= totalDays; d++) {
+    /*for (let d = 1; d <= totalDays; d++) {
         const ds = `${currentYear}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const count = data[ds] || 0;
         const cell = document.createElement('div');
         cell.className = 'month-cell' + (count > 0 ? ' has-diary' : '');
         cell.textContent = d;
+        if (count > 0) {
+            cell.title = `${count}篇日记`;
+            cell.onclick = () => {
+                if (window.openDiaryListTab) {
+                    window.openDiaryListTab(ds);
+                }
+            };
+        }
+        grid.appendChild(cell);
+    }*/
+    // 填充日期
+    for (let d = 1; d <= totalDays; d++) {
+        const ds = `${currentYear}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const count = data[ds] || 0;
+        const cell = document.createElement('div');
+        cell.className = 'month-cell' + (count > 0 ? ' has-diary' : '');
+        cell.innerHTML = count > 0 ? `${d}<span style="position:absolute; top:2px; right:3px; font-size:0.55rem; color:#4a90e2; font-weight:600;">${count}</span>` : d;
+        //cell.innerHTML = count > 0 ? `${d}<span style="font-size:0.6rem;color:#4a90e2;display:block;margin-top:2px;">·N${count}</span>` : d;
         if (count > 0) {
             cell.title = `${count}篇日记`;
             cell.onclick = () => {
