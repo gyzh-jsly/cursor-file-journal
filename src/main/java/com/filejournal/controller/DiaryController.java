@@ -13,7 +13,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -32,6 +35,8 @@ public class DiaryController {
     private DiaryCommentService commentService;
     @Autowired
     private ImportBatchService batchService;
+
+/*===================【封面年历、月历视图】==========================*/
 
     // 年历页面（固定标签页内容）
     @GetMapping("/calendar")
@@ -90,6 +95,9 @@ public class DiaryController {
         return "diary/list";
     }
 
+
+/*===================【日记·段评·备注】==========================*/
+
     // 日记全文页
     @GetMapping("/{id}")
     public String detail(@PathVariable Integer id, Model model) {
@@ -119,7 +127,6 @@ public class DiaryController {
                         @RequestParam(required = false) Boolean isPinned) {
         return diaryService.updateDiary(id, content, isPinned);
     }
-
 
     // 获取全文备注列表
     @GetMapping("/{id}/notes")
@@ -161,6 +168,23 @@ public class DiaryController {
     }
 
 
+/*===================【过往归档】==========================*/
+
+    @PostMapping("/import")
+    @ResponseBody
+    public String importDiaries(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return "文件为空";
+        }
+        try {
+            String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+            diaryService.importDiaries(file.getOriginalFilename(), content);
+            return "导入成功";
+        } catch (IOException e) {
+            return "导入失败: " + e.getMessage();
+        }
+    }
+
     // 获取所有导入批次
     @GetMapping("/import-batches")
     @ResponseBody
@@ -168,11 +192,20 @@ public class DiaryController {
         return batchService.getAllBatches();
     }
 
-    // 删除导入批次
-    @DeleteMapping("/import-batch/{id}")
+    //获取某批次下的日记列表
+    @GetMapping("/import-batch/{batchId}")
     @ResponseBody
-    public String deleteBatch(@PathVariable Integer id) {
-        batchService.deleteBatch(id);
+    public List<Diary> listByBatch(@PathVariable Integer batchId) {
+        return diaryService.getDiariesByBatchId(batchId);
+    }
+
+    // 删除导入批次
+    @DeleteMapping("/import-batch/{batchId}")
+    @ResponseBody
+    public String deleteBatch(@PathVariable Integer batchId) {
+        //两张表都要删。分隔后的日记和手写的是存在一张表里的。
+        batchService.deleteBatch(batchId);
+        diaryService.deleteBatchDiaries(batchId);
         return "success";
     }
 

@@ -14,9 +14,39 @@
         .diary-detail-content { font-size: 1rem; line-height: 1.8; white-space: pre-wrap; margin-bottom: 24px; }
         .btn-dossier { background: #fdfdfb; border: 1px solid #b0a99f; color: #2b2b2b; font-size: 0.85rem; padding: 6px 16px; cursor: pointer; }
         .frozen-tag { display: inline-block; background: #e8f0fe; border: 1px solid #4a90e2; color: #1e293b; font-size: 0.8rem; padding: 2px 10px; margin-left: 10px; }
+        /* 写段评弹出按钮 */
+        .comment-popup-btn {
+            position: absolute; display: none; background: #4a6a8a; color: #fff;
+            border: none; padding: 4px 12px; font-size: 0.8rem; cursor: pointer;
+            border-radius: 4px; z-index: 9999;
+        }
+
+        /* 段评列表区域 */
+        .comments-section { margin-top: 24px; }
+        .comments-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #2b2b2b; }
+        .comment-item { background: #fdfdfb; border: 1px solid #e0dbd1; padding: 10px 14px; margin-bottom: 8px; }
+        .comment-item .comment-text { font-size: 0.85rem; color: #6b5e53; margin-bottom: 4px; }
+        .comment-item .comment-meta { font-size: 0.75rem; color: #94a3b8; }
+        .comment-item .comment-selected { font-size: 0.8rem; color: #4a6a8a; font-style: italic; margin-bottom: 4px; }
+
+        .commented-text {
+            background: #fef3c7;
+            border-bottom: 2px solid #f59e0b;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+        .commented-text:hover {
+            background: #fde68a;
+        }
+
+        /*用于区分匹配失败的段评高亮颜色*/
+        .commented-text[data-match="0"] {
+            background: #f0e0d0;  /* 浅橙色，表示偏移失效 */
+            border-bottom-color: #f59e0b;
+        }
     </style>
 </head>
-<body>
+<body th:attr="data-diary-id=${diary.id}">
 <div class="diary-detail-header">
     <div class="diary-detail-date">
         📖 日记详情
@@ -30,12 +60,19 @@
     </div>
 </div>
 
-<div class="diary-detail-content" th:text="${diary.content}">日记正文内容...</div>
+<div class="diary-detail-content" id="diaryContent" th:text="${diary.content}">日记正文内容...</div>
+<!-- 段评列表 -->
+<div class="comments-section">
+    <h3><i class="bi bi-chat-left-text me-1"></i>段评</h3>
+    <div id="commentsList"></div>
+</div>
 
 <div class="diary-detail-actions" th:if="${canEdit}">
     <button class="btn-dossier" th:onclick="'editDiary(' + ${diary.id} + ')'">
         <i class="bi bi-pencil me-1"></i>编辑
     </button>
 </div>
+
+
 </body>
 </html>

@@ -2,7 +2,9 @@ package com.filejournal.service.impl;
 
 import com.filejournal.mapper.DiaryMapper;
 import com.filejournal.model.Diary;
+import com.filejournal.model.ImportBatch;
 import com.filejournal.service.DiaryService;
+import com.filejournal.service.ImportBatchService;
 import com.filejournal.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,6 +26,9 @@ public class DiaryServiceImpl implements DiaryService {
 
     @Autowired
     private WeatherService weatherService;
+    @Autowired
+    private ImportBatchService batchService;
+
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -123,7 +128,56 @@ public class DiaryServiceImpl implements DiaryService {
         }
     }
 
-	@Override
+    @Override
+    public List<Diary> getDiariesByBatchId(Integer batchId) {
+        return diaryMapper.selectByBatchId(batchId);
+    }
+
+    @Override
+    public void deleteBatchDiaries(Integer batchId) {
+        diaryMapper.deleteByBatchId(batchId);
+    }
+
+    @Override
+    @Transactional
+    public void importDiaries(String fileName, String content) {
+        // 1. 创建(插入)导入批次
+        ImportBatch batch = batchService.createBatch(fileName);
+
+        // 2. 按两个空行切割（\n\n\n\n 或 \r\n\r\n\r\n\r\n）
+        String[] parts = content.split("\\n\\s*\\n");  // 按空行分割，兼容中间有空格的情况
+
+        int count = 0;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (String part : parts) {
+            String diaryContent = part.trim();
+            if (diaryContent.isEmpty()) {
+                continue;
+            }
+
+            Diary diary = new Diary();
+            diary.setContent(diaryContent);
+            diary.setCreatedAt(now);
+            diary.setEditDeadline(now.plusHours(1));  // 导入日记窗口期设为1小时，实际可以设为0直接冻结
+            diary.setLastModifiedAt(null);
+            diary.setModifyCount(0);
+            diary.setFirstWeather("导入");
+            diary.setIsPinned(0);
+            diary.setDiaryDate(now.toLocalDate());    // 统一用导入日期
+            diary.setSourceType("IMPORTED");
+            diary.setIsFrozen(1);                     // 导入日记直接冻结
+            diary.setImportBatchId(batch.getId());
+
+            diaryMapper.insert(diary);
+            count++;
+        }
+
+        // 3. 更新批次的日记数量
+        batchService.updateBatchCount(batch.getId(), count);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public Map<String, Integer> getYearStats(Integer year) {
         String cacheKey = "diary:year-stats:" + year;

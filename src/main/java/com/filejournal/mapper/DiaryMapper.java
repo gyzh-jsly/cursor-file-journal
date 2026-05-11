@@ -21,7 +21,6 @@ public interface DiaryMapper {
      */
     List<Map<String, Object>> selectYearStats(@Param("year") Integer year);
 
-    List<Map<String, Object>> selectImportBatches();
     List<Diary> selectByBatchId(Integer batchId);
-    int updateFrozenStatus(Integer id);
+    int deleteByBatchId(Integer batchId);
 }

@@ -602,10 +602,368 @@ window.openDiaryDetailTab = function(diaryId) {
         .then(res => res.text())
         .then(html => { pane.innerHTML = html; });
 };
+
+function openDiaryDetail(diaryId) {
+    if (window.parent && window.parent.openDiaryDetailTab) {
+        window.parent.openDiaryDetailTab(diaryId);
+    }
+
+    // 从当前激活的标签页中获取 pane
+    const activePane = document.querySelector('.tab-pane.active');
+    if (!activePane) return;
+
+    fetch('/diary/' + diaryId)
+        .then(res => res.text())
+        .then(html => {
+            activePane.innerHTML = html;
+            /*const scripts = activePane.querySelectorAll('script');
+            scripts.forEach(s => {
+                const newScript = document.createElement('script');
+                newScript.textContent = s.textContent;
+                document.body.appendChild(newScript);
+            });*/
+
+            // --- 关键：手动激活这个新页面的段评功能 ---
+            activateComments(activePane, diaryId);
+        });
+}
 /*--list>*/
 
-function openDiaryDetail(id) {
-    if (window.parent && window.parent.openDiaryDetailTab) {
-        window.parent.openDiaryDetailTab(id);
-    }
+
+/*<diary/detail.html*/
+/*
+const diaryId = document.body.getAttribute('data-diary-id');
+
+// 加载已有段评
+function loadComments() {
+    fetch('/diary/' + diaryId + '/comments')
+        .then(res => res.json())
+        .then(comments => {
+            const list = document.getElementById('commentsList');
+            if (comments.length === 0) {
+                list.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem;">暂无段评，划选正文文字添加</p>';
+                return;
+            }
+            list.innerHTML = comments.map(c => `
+                    <div class="comment-item">
+                        <div class="comment-selected">📌 ${c.selectedText}</div>
+                        <div class="comment-text">${c.comment}</div>
+                        <div class="comment-meta">v${c.version} · ${new Date(c.createdAt).toLocaleString()}</div>
+                    </div>
+                `).join('');
+        });
 }
+*/
+
+//负责在新加载的日记详情页上，重新建立划词监听和段评加载逻辑。
+/*function activateComments(container, diaryId) {
+    const contentEl = container.querySelector('#diaryContent');
+    if (!contentEl) return;
+
+    // 1. 先加载已有段评
+    fetch('/diary/' + diaryId + '/comments')
+        .then(res => res.json())
+        .then(comments => {
+            const list = container.querySelector('#commentsList');
+            if (!list) return;
+            if (!comments || comments.length === 0) {
+                list.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem;">暂无段评，划选正文文字添加</p>';
+                return;
+            }
+            list.innerHTML = comments.map(c => `
+                <div class="comment-item">
+                    <div class="comment-selected">📌 ${c.selectedText}</div>
+                    <div class="comment-text">${c.comment}</div>
+                    <div class="comment-meta">v${c.version} · ${new Date(c.createdAt).toLocaleString()}</div>
+                </div>
+            `).join('');
+        });
+
+    // 2. 创建划词弹窗
+    const popup = document.createElement('div');
+    popup.className = 'comment-popup-btn';
+    popup.textContent = '写段评';
+    document.body.appendChild(popup);
+
+    // 3. 监听划词事件
+    document.addEventListener('mouseup', function(e) {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        console.log('选中内容', selectedText);
+        const anchorNode = selection.anchorNode;
+        console.log('anchorNode', anchorNode);
+        console.log('是否包含', contentEl.contains(anchorNode));
+
+        if (selectedText.length > 0 && contentEl.contains(selection.anchorNode)) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const startOffset = contentEl.textContent.indexOf(selectedText);
+
+            popup.style.display = 'block';
+            popup.style.top = (rect.bottom + 6) + 'px';
+            popup.style.left = (rect.left) + 'px';
+
+            popup.onclick = function() {
+                const content = prompt('请输入你的段评：');
+                if (content && content.trim()) {
+                    fetch('/diary/' + diaryId + '/comments', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `selectedText=${encodeURIComponent(selectedText)}&startOffset=${startOffset}&content=${encodeURIComponent(content.trim())}`
+                    })
+                        .then(res => res.json())
+                        .then(() => {
+                            selection.removeAllRanges();
+                            popup.style.display = 'none';
+                            // 添加成功后刷新一下列表
+                            activateComments(container, diaryId);
+                        });
+                }
+            };
+        } else {
+            popup.style.display = 'none';
+        }
+    });
+}*/
+
+let currentHandleMouseUp = null;
+
+function activateComments(container, diaryId) {
+    const contentEl = container.querySelector('#diaryContent');
+    if (!contentEl) return;
+
+    // 1. 加载已有段评，给正文加高亮
+    fetch('/diary/' + diaryId + '/comments')
+        .then(res => res.json())
+        .then(comments => {
+            addHighlightsToContent(contentEl, comments);
+        });
+
+    // 2. 创建划词弹窗按钮
+    const oldPopup = document.getElementById('commentPopup');
+    if (oldPopup) oldPopup.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'comment-popup-btn';
+    popup.id = 'commentPopup';
+    popup.style.display = 'none';
+    popup.textContent = '💬 写段评';
+    document.body.appendChild(popup);
+
+    // 3. 监听划词事件
+    if (currentHandleMouseUp) {
+        document.removeEventListener('mouseup', currentHandleMouseUp);
+    }
+
+    currentHandleMouseUp = function(e) {
+        // 如果点击的是高亮文字，展示段评悬浮框
+        if (e.target.classList.contains('commented-text')) {
+            const selectedText = e.target.getAttribute('data-selected-text');
+            showCommentFloatBox(e, diaryId, selectedText, container);
+            popup.style.display = 'none';
+            return;
+        }
+
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        console.log('选中内容', selectedText);
+        const anchorNode = selection.anchorNode;
+        console.log('anchorNode', anchorNode);
+        console.log('是否包含', contentEl.contains(anchorNode));
+
+        if (selectedText.length > 0 && contentEl.contains(selection.anchorNode)) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const startOffset = contentEl.textContent.indexOf(selectedText);
+
+            console.log('准备显示弹窗', popup, rect);
+            popup.style.display = 'block';
+            popup.style.top = (rect.bottom  + 6) + 'px';
+            popup.style.left = (rect.left ) + 'px';
+
+            popup.onclick = function() {
+                const content = prompt('请输入你的段评：');
+                if (content && content.trim()) {
+                    fetch('/diary/' + diaryId + '/comments', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `selectedText=${encodeURIComponent(selectedText)}&startOffset=${startOffset}&content=${encodeURIComponent(content.trim())}`
+                    })
+                        .then(res => res.json())
+                        .then(() => {
+                            selection.removeAllRanges();
+                            popup.style.display = 'none';
+                            activateComments(container, diaryId);
+                        });
+                }
+            };
+        } else {
+            popup.style.display = 'none';
+        }
+    };
+
+    document.addEventListener('mouseup', currentHandleMouseUp);
+}
+
+// 给正文中被段评过的文字添加高亮标记
+function addHighlightsToContent(contentEl, comments) {
+    if (!comments || comments.length === 0) return;
+
+    const fullText = contentEl.textContent;
+    const fragments = [];
+    let lastEnd = 0;
+
+    // 1. 去重并按偏移量排序
+    const unique = [];
+    const seen = new Set();
+    comments.forEach(c => {
+        const key = c.startOffset + '|' + (c.startOffset + c.selectedText.length);
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(c);
+        }
+    });
+    unique.sort((a, b) => a.startOffset - b.startOffset);
+
+    // 2. 逐段切割
+    unique.forEach(c => {
+        const start = c.startOffset;
+        const end = start + c.selectedText.length;
+
+        // 边界保护
+        if (start < lastEnd || end > fullText.length) return;
+        if (fullText.substring(start, end) !== c.selectedText) return;
+
+        if (lastEnd < start) {
+            fragments.push(fullText.substring(lastEnd, start));
+        }
+        fragments.push(`<span class="commented-text" data-selected-text="${c.selectedText.replace(/"/g, '&quot;')}" data-start="${start}">${fullText.substring(start, end)}</span>`);
+        lastEnd = end;
+    });
+
+    if (lastEnd < fullText.length) {
+        fragments.push(fullText.substring(lastEnd));
+    }
+
+    contentEl.innerHTML = fragments.join('');
+    /*
+    // 按 selected_text 去重
+    const uniqueTexts = [...new Set(comments.map(c => c.selectedText))];
+    let html = contentEl.textContent;
+
+    uniqueTexts.forEach(text => {
+        const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        html = html.replace(
+            new RegExp(escaped, 'g'),
+            `<span class="commented-text" data-selected-text="${escaped}">${text}</span>`
+        );
+    });
+
+    contentEl.innerHTML = html;*/
+}
+
+// 弹出可拖拽的段评展示悬浮框
+function showCommentFloatBox(event, diaryId, selectedText, container) {
+    // 移除旧悬浮框
+    const oldBox = document.getElementById('commentFloatBox');
+    if (oldBox) oldBox.remove();
+
+    // 获取该段文字的所有段评
+    fetch('/diary/' + diaryId + '/comments')
+        .then(res => res.json())
+        .then(comments => {
+            const related = comments.filter(c => c.selectedText === selectedText);
+            if (related.length === 0) return;
+
+            // 创建悬浮框
+            const box = document.createElement('div');
+            box.id = 'commentFloatBox';
+            box.style.cssText = `
+                position: absolute; top: ${event.pageY}px; left: ${event.pageX}px;
+                width: 360px; max-height: 400px; overflow-y: auto;
+                background: #fdfdfb; border: 1px solid #b0a99f;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 10000;
+                font-family: "Segoe UI","宋体",SimSun,serif;
+                display: flex; flex-direction: column;
+            `;
+
+            // 标题栏（可拖拽）——固定不动
+            const header = document.createElement('div');
+            header.style.cssText = `
+                display: flex; justify-content: space-between; align-items: center;
+                padding: 10px 14px; background: #4a6a8a; color: #fff;
+                cursor: move; user-select: none; font-size: 0.9rem; font-weight: 600;
+                flex-shrink: 0;
+            `;
+            header.innerHTML = `<span>📌 段评</span><span style="cursor:pointer; font-size:1.2rem;" onclick="document.getElementById('commentFloatBox').remove()">✕</span>`;
+            box.appendChild(header);
+
+            // 段评列表
+            const list = document.createElement('div');
+            list.style.cssText = 'padding: 10px 14px; flex: 1; overflow-y: auto;';
+            related.forEach(c => {
+                const item = document.createElement('div');
+                item.style.cssText = `
+                    padding: 8px 0; border-bottom: 1px solid #e0dbd1; font-size: 0.85rem;
+                `;
+                item.innerHTML = `
+                    <div style="color:#4a6a8a; font-style:italic; margin-bottom:4px;">"${c.selectedText}"</div>
+                    <div style="color:#2b2b2b; margin-bottom:2px;">${c.comment}</div>
+                    <div style="color:#94a3b8; font-size:0.75rem;">v${c.version} · ${new Date(c.createdAt).toLocaleString()}</div>
+                `;
+                list.appendChild(item);
+            });
+            box.appendChild(list);
+
+            // 底部输入区——固定不动
+            const footer = document.createElement('div');
+            footer.style.cssText = 'padding: 8px 14px; border-top: 1px solid #e0dbd1; display: flex; gap: 8px;';
+            const input = document.createElement('input');
+            input.placeholder = '追加段评...';
+            input.style.cssText = 'flex:1; border:1px solid #b0a99f; padding:6px 10px; font-size:0.85rem; flex-shrink: 0;';
+            const submitBtn = document.createElement('button');
+            submitBtn.textContent = '提交';
+            submitBtn.style.cssText = `
+                background: #4a6a8a; color: #fff; border: none; padding: 6px 14px;
+                cursor: pointer; font-size: 0.85rem;
+            `;
+            submitBtn.onclick = function() {
+                const content = input.value.trim();
+                if (!content) return;
+                const startOffset = container.querySelector('#diaryContent').textContent.indexOf(selectedText);
+                fetch('/diary/' + diaryId + '/comments', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `selectedText=${encodeURIComponent(selectedText)}&startOffset=${startOffset}&content=${encodeURIComponent(content)}`
+                })
+                    .then(res => res.json())
+                    .then(() => {
+                        box.remove();
+                        activateComments(container, diaryId);
+                    });
+            };
+            footer.appendChild(input);
+            footer.appendChild(submitBtn);
+            box.appendChild(footer);
+
+            // 拖拽功能
+            let isDragging = false, offsetX, offsetY;
+            header.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                offsetX = e.clientX - box.offsetLeft;
+                offsetY = e.clientY - box.offsetTop;
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    box.style.left = (e.clientX - offsetX) + 'px';
+                    box.style.top = (e.clientY - offsetY) + 'px';
+                }
+            });
+            document.addEventListener('mouseup', function() { isDragging = false; });
+
+            container.appendChild(box);
+        });
+}
+/*--diary/detail.html>*/

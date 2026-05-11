@@ -18,10 +18,10 @@
         WHERE id = #{id}
     </update>
 
-    <!-- 更新冻结状态-->
-    <update id="updateFrozenStatus">
+    <!-- 更新冻结状态--><!--不需要。因为是永久冻结-->
+    <!--<update id="updateFrozenStatus">
         UPDATE diary SET is_frozen = 1 WHERE id = #{id}
-    </update>
+    </update>-->
 
     <select id="selectById" resultType="com.filejournal.model.Diary">
         SELECT * FROM diary WHERE id = #{id}
@@ -59,21 +59,16 @@
         GROUP BY MONTH(diary_date)
     </select>
 
-    <!--查询导入批次列表-->
-    <select id="selectImportBatches" resultType="map">
-        SELECT import_batch_id, file_name, COUNT(*) AS count, MIN(created_at) AS imported_at
-        FROM diary
-        WHERE source_type = 'IMPORTED'
-        GROUP BY import_batch_id, file_name
-        ORDER BY imported_at DESC
-    </select>
-
     <!--查询某批次下的日记-->
     <select id="selectByBatchId" resultType="com.filejournal.model.Diary">
         SELECT id, LEFT(content, 50) AS content_preview, created_at,
-            first_weather, diary_date, source_type
+            first_weather, diary_date, source_type, import_batch_id, is_frozen
         FROM diary
         WHERE import_batch_id = #{batchId}
         ORDER BY id
     </select>
+
+    <delete id="deleteByBatchId">
+        DELETE FROM diary WHERE import_batch_id = #{batchId}
+    </delete>
 </mapper>

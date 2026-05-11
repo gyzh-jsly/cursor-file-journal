@@ -15,4 +15,9 @@ public interface DiaryService {
     Map<String, Integer> getYearStats(Integer year);
     boolean canEdit(Diary diary);
     LocalDateTime calculateDeadline(LocalDateTime createdAt);
+
+    List<Diary> getDiariesByBatchId(Integer batchId);
+    void deleteBatchDiaries(Integer batchId);
+
+    void importDiaries(String Filename, String content);
 }

@@ -18,6 +18,7 @@ public class ImportBatchServiceImpl implements ImportBatchService {
     public ImportBatch createBatch(String fileName) {
         ImportBatch batch = new ImportBatch();
         batch.setFileName(fileName);
+        batch.setBatchName("导入批次"+LocalDateTime.now());
         batch.setImportCount(0);
         batch.setCreatedAt(LocalDateTime.now());
         batchMapper.insert(batch);
