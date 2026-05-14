@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.FileNoteMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.FileNote" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO file_notes (file_id, revision_id, content, created_at)
+        VALUES (#{fileId}, #{revisionId}, #{content}, #{createdAt})
+    </insert>
+
+    <select id="selectByFileId" resultType="com.filejournal.model.FileNote">
+        SELECT * FROM file_notes WHERE file_id = #{fileId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByRevisionId" resultType="com.filejournal.model.FileNote">
+        SELECT * FROM file_notes WHERE revision_id = #{revisionId}
+    </select>
+
+    <select id="selectFileLevelNotes" resultType="com.filejournal.model.FileNote">
+        SELECT * FROM file_notes WHERE file_id = #{fileId} AND revision_id IS NULL
+        ORDER BY created_at DESC
+    </select>
+
+    <update id="update">
+        UPDATE file_notes SET content = #{content} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM file_notes WHERE id = #{id}
+    </delete>
+</mapper>

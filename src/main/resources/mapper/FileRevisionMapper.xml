@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.FileRevisionMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.FileRevision" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO file_revisions (file_id, version_number, recorded_at, file_size)
+        VALUES (#{fileId}, #{versionNumber}, #{recordedAt}, #{fileSize})
+    </insert>
+
+    <select id="selectById" resultType="com.filejournal.model.FileRevision">
+        SELECT * FROM file_revisions WHERE id = #{id}
+    </select>
+
+    <select id="selectByFileId" resultType="com.filejournal.model.FileRevision">
+        SELECT * FROM file_revisions
+        WHERE file_id = #{fileId}
+        ORDER BY recorded_at DESC
+    </select>
+
+    <select id="selectLatestByFileId" resultType="com.filejournal.model.FileRevision">
+        SELECT * FROM file_revisions
+        WHERE file_id = #{fileId}
+        ORDER BY recorded_at DESC LIMIT 1
+    </select>
+
+    <update id="updateRecordedAt">
+        UPDATE file_revisions SET recorded_at = #{recordedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="update" parameterType="com.filejournal.model.FileRevision">
+        UPDATE file_revisions
+        SET version_number = #{versionNumber},
+            file_size = #{fileSize}
+        WHERE id = #{id}
+    </update>
+</mapper>

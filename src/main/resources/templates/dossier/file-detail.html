@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>文件详情</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/css/dossier.css">
+    <style>
+        .file-detail { padding: 24px 28px; height: 100%; overflow-y: auto; box-sizing: border-box; }
+        .file-meta { margin-bottom: 24px; padding: 14px 18px; background: var(--card-bg); border: 1px solid var(--border); }
+        .file-meta span { margin-right: 24px; font-size: 0.9rem; color: var(--muted); }
+        .section-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 16px; color: var(--text); }
+
+        /* 时间轴 */
+        .timeline { position: relative; padding-left: 24px; margin-left: 8px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 0; top: 8px; bottom: 0;
+            width: 2px; background: var(--border);
+        }
+        .timeline-node { position: relative; margin-bottom: 20px; }
+        .timeline-node::before {
+            content: ''; position: absolute; left: -27px; top: 8px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent); border: 2px solid var(--card-bg);
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+        .revision-header {
+            display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+            background: var(--card-bg); border: 1px solid var(--border);
+            cursor: pointer; user-select: none;
+        }
+        .revision-header:hover { background: var(--hover-bg); }
+        .revision-header .rev-version { font-weight: 600; color: var(--accent); }
+        .revision-header .rev-time { color: var(--muted); font-size: 0.85rem; }
+        .revision-header .rev-size { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+        .revision-header .rev-action { font-size: 0.8rem; color: var(--accent); cursor: pointer; }
+
+        /* 备注列表（折叠） */
+        .revision-notes { display: none; padding: 8px 0 8px 20px; margin-left: 12px; border-left: 2px solid var(--border); }
+        .revision-notes.show { display: block; }
+        .note-item { padding: 6px 10px; margin-bottom: 4px; background: var(--bg); border: 1px solid var(--border); font-size: 0.85rem; }
+        .note-item .note-meta { color: var(--muted); font-size: 0.75rem; }
+
+        /* 文件级备注 */
+        .file-notes { margin-top: 24px; }
+        .file-note-item { padding: 8px 12px; margin-bottom: 6px; background: var(--card-bg); border: 1px solid var(--border); font-size: 0.85rem; }
+        .file-note-item .note-meta { color: var(--muted); font-size: 0.75rem; }
+
+        .add-note-area { margin-top: 16px; display: flex; gap: 10px; align-items: flex-start; }
+        .add-note-area textarea { flex: 1; border: 1px solid var(--border); padding: 8px 12px; font-size: 0.85rem; background: var(--card-bg); resize: vertical; }
+        .add-note-area select { border: 1px solid var(--border); padding: 6px 10px; font-size: 0.8rem; background: var(--card-bg); }
+    </style>
+</head>
+<body th:attr="data-file-id=${fileId}">
+<div class="file-detail">
+    <!-- 文件基本信息 -->
+    <div class="file-meta">
+        <span><strong>路径：</strong> <span th:text="${file.filePath}">-</span></span>
+        <span><strong>大小：</strong> <span th:text="${file.fileSize}">-</span> 字节</span>
+        <span><strong>来源：</strong> <span th:text="${file.sourceType}">-</span></span>
+    </div>
+
+    <!-- 修订记录时间轴 -->
+    <div class="section-title"><i class="bi bi-clock-history me-1"></i>修订记录</div>
+    <div th:if="${#lists.isEmpty(revisions)}" style="color: var(--muted); padding: 20px; text-align: center;">暂无修订记录</div>
+    <div class="timeline" th:if="${!#lists.isEmpty(revisions)}">
+        <div th:each="rev : ${revisions}" class="timeline-node">
+            <div class="revision-header" th:attr="onclick=|toggleRevisionNotes(this)|">
+                <span class="rev-version">v<span th:text="${rev.versionNumber}">1</span></span>
+                <span class="rev-time" th:text="${#temporals.format(rev.recordedAt, 'yyyy-MM-dd HH:mm')}">-</span>
+                <span class="rev-size" th:text="${rev.fileSize} + ' 字节'">-</span>
+                <span class="rev-action" th:attr="onclick=|event.stopPropagation();addRevisionNote(${rev.id})|">+ 备注</span>
+            </div>
+            <div class="revision-notes" th:attr="data-rev-id=${rev.id}">
+                <div th:each="note : ${notes}" th:if="${note.revisionId == rev.id}" class="note-item">
+                    <div th:text="${note.content}">备注内容</div>
+                    <div class="note-meta" th:text="${#temporals.format(note.createdAt, 'MM-dd HH:mm')}">-</div>
+                </div>
+                <div th:if="${#lists.isEmpty(notes)}" class="note-item" style="color: var(--muted); font-style: italic;">暂无备注</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件级备注 -->
+    <div class="file-notes">
+        <div class="section-title"><i class="bi bi-chat-left-text me-1"></i>文件备注</div>
+        <div th:each="note : ${notes}" th:if="${note.revisionId == null}" class="file-note-item">
+            <div th:text="${note.content}">备注内容</div>
+            <div class="note-meta" th:text="${#temporals.format(note.createdAt, 'yyyy-MM-dd HH:mm')}">-</div>
+        </div>
+        <div th:if="${#lists.isEmpty(notes)}" style="color: var(--muted); padding: 10px; text-align: center;">暂无文件备注</div>
+    </div>
+
+    <!-- 添加备注区 -->
+    <div class="section-title" style="margin-top: 24px;"><i class="bi bi-plus-circle me-1"></i>添加备注</div>
+    <div class="add-note-area">
+        <textarea id="newNoteContent" rows="2" placeholder="输入备注内容..."></textarea>
+        <select id="noteRevisionSelect">
+            <option value="">文件级备注</option>
+            <option th:each="rev : ${revisions}" th:value="${rev.id}" th:text="'v' + ${rev.versionNumber} + ' (' + ${#temporals.format(rev.recordedAt, 'MM-dd HH:mm')} + ')'">v1</option>
+        </select>
+        <button class="btn-dossier" onclick="submitNote()" style="width: auto; padding: 6px 20px;">提交</button>
+    </div>
+</div>
+
+<script>
+    function toggleRevisionNotes(header) {
+        const notes = header.nextElementSibling;
+        if (notes && notes.classList.contains('revision-notes')) {
+            notes.classList.toggle('show');
+        }
+    }
+</script>
+</body>
+</html>

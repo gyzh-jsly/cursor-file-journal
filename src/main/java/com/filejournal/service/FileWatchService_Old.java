@@ -1,3 +1,4 @@
+/*
 package com.filejournal.service;
 
 import org.springframework.beans.factory.DisposableBean;
@@ -104,12 +105,14 @@ public class FileWatchService_Old implements DisposableBean{
         File file = filePath.toFile();
         String absolutePath = file.getAbsolutePath();
 
-        /**出现报错：
+        */
+/**出现报错：
          * 1.业务现象：新建一个 ttttt.txt，却出现了两个文件（ttttt.txt 和 新建文本文档.txt）
          * 2.根本错误：HikariDataSource has been closed，数据库连接池被关闭了
          * 解决方案：增加一个 文件存在性校验 + 去重逻辑：
          * 
-        */
+        *//*
+
         //===关键修复1：检查物理文件是否真实存在（过滤掉临时文件和已删除文件）
         if (!file.exists() || !file.isFile()) {
             System.out.println("文件不存在或不是普通文件，跳过: " + absolutePath);
@@ -182,3 +185,4 @@ public class FileWatchService_Old implements DisposableBean{
         System.out.println("FileWatchService 已销毁");
     }
 }
+*/

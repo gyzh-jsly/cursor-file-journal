@@ -25,4 +25,6 @@ public interface DossierService {
     List<FileNote> getNotesByFile(Integer fileId);
     List<FileNote> getNotesByRevision(Integer revisionId);
     List<FileNote> getFileLevelNotes(Integer fileId);
+
+    DossierFile getFileById(Integer id);
 }

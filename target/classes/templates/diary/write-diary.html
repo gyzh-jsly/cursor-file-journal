@@ -1,95 +1,45 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>写日记</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+
+    </style>
 </head>
 <body>
-<div class="write-diary-page">
-    <div class="write-diary-header">
-        <h3 class="write-diary-title">写日记</h3>
+<div class="write-diary-wrap">
+    <!-- 元信息区：天气 -->
+    <div class="write-diary-meta">
+        <span class="meta-item">
+            <i class="bi bi-cloud-sun"></i>
+            <span id="currentWeather">获取天气中...</span>
+        </span>
     </div>
 
-    <div id="writeDiaryAlert" class="alert alert-success py-2 px-3 mb-3 d-none" role="alert">
-        发布成功
-    </div>
-
+    <!-- 编辑器 -->
     <div class="write-diary-editor-wrap">
-        <textarea id="writeDiaryContent"
-                  class="write-diary-editor"
-                  placeholder="记录今天发生的事、想法或感受..."></textarea>
+        <textarea id="diaryContent" class="write-diary-editor" placeholder="今天发生了什么..."></textarea>
     </div>
 
+    <!-- 底部操作栏 -->
     <div class="write-diary-footer">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="writeDiaryPinned">
-            <label class="form-check-label" for="writeDiaryPinned">置顶这篇日记</label>
-        </div>
-        <div class="write-diary-actions">
-            <button type="button" class="btn btn-outline-secondary" id="saveDraftBtn" disabled>存草稿</button>
-            <button type="button" class="btn btn-primary" id="publishDiaryBtn">发布</button>
-        </div>
+        <label>
+            <input type="checkbox" id="pinDiaryCheck"> 置顶这篇日记
+        </label>
+        <button class="btn-primary-dossier" onclick="publishDiary()">
+            <i class="bi bi-check-lg me-1"></i>发布
+        </button>
     </div>
+
+    <!-- 发布成功提示 -->
+    <div id="publishAlert" class="alert-success-dossier">发布成功</div>
 </div>
 
 <script>
-(() => {
-    function getEl(id) {
-        return document.getElementById(id);
-    }
 
-    function showAlert(message) {
-        const alertBox = getEl('writeDiaryAlert');
-        alertBox.textContent = message;
-        alertBox.classList.remove('d-none');
-        setTimeout(() => {
-            alertBox.classList.add('d-none');
-        }, 2000);
-    }
-
-    async function publishDiary() {
-        const contentEl = getEl('writeDiaryContent');
-        const pinnedEl = getEl('writeDiaryPinned');
-        const publishBtn = getEl('publishDiaryBtn');
-        const content = contentEl.value.trim();
-
-        if (!content) {
-            showAlert('请输入日记内容后再发布');
-            return;
-        }
-
-        publishBtn.disabled = true;
-        publishBtn.textContent = '发布中...';
-
-        try {
-            const body = `content=${encodeURIComponent(content)}&isPinned=${pinnedEl.checked}`;
-            const res = await fetch('/diary/create', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body
-            });
-            if (!res.ok) {
-                throw new Error('发布失败');
-            }
-
-            contentEl.value = '';
-            pinnedEl.checked = false;
-            showAlert('发布成功');
-
-            if (window.parent && typeof window.parent.refreshCurrentCalendarView === 'function') {
-                window.parent.refreshCurrentCalendarView();
-            }
-        } catch (e) {
-            showAlert('发布失败，请稍后重试');
-        } finally {
-            publishBtn.disabled = false;
-            publishBtn.textContent = '发布';
-        }
-    }
-
-    getEl('publishDiaryBtn').addEventListener('click', publishDiary);
-})();
 </script>
 </body>
 </html>

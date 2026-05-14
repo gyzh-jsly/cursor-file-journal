@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.DossierFileMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.DossierFile" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dossier_files (dir_id, file_path, file_name, file_size, source_type, status, created_at)
+        VALUES (#{dirId}, #{filePath}, #{fileName}, #{fileSize}, #{sourceType}, #{status}, #{createdAt})
+    </insert>
+
+    <select id="selectById" resultType="com.filejournal.model.DossierFile">
+        SELECT * FROM dossier_files WHERE id = #{id}
+    </select>
+
+    <select id="selectByPath" resultType="com.filejournal.model.DossierFile">
+        SELECT * FROM dossier_files WHERE file_path = #{filePath}
+    </select>
+
+    <select id="selectByDirId" resultType="com.filejournal.model.DossierFile">
+        SELECT * FROM dossier_files WHERE dir_id = #{dirId} AND status = 'ACTIVE'
+        ORDER BY file_name
+    </select>
+
+    <select id="selectBySourceType" resultType="com.filejournal.model.DossierFile">
+        SELECT * FROM dossier_files WHERE source_type = #{sourceType} AND status = 'ACTIVE'
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByStatus" resultType="com.filejournal.model.DossierFile">
+        SELECT * FROM dossier_files WHERE status = #{status}
+    </select>
+
+    <update id="update" parameterType="com.filejournal.model.DossierFile">
+        UPDATE dossier_files
+        SET file_size = #{fileSize}, file_name = #{fileName}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE dossier_files SET status = #{status}
+        <if test="status == 'ARCHIVED'">, archived_at = NOW()</if>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM dossier_files WHERE id = #{id}
+    </delete>
+</mapper>

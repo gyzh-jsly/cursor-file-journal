@@ -3,6 +3,8 @@ package com.filejournal.controller;
 import java.util.Collections;
 import java.util.List;
 
+import com.filejournal.model.MonitoredDirectory;
+import com.filejournal.service.DossierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,9 +21,11 @@ public class HomeController {
         return "index";
     }
 */
-
     @Autowired
     private FolderService folderService;
+
+    @Autowired
+    private DossierService dossierService;
 
     // @GetMapping("/")
     // public String index(Model model) {
@@ -30,7 +34,7 @@ public class HomeController {
     //     return "index2";
     // }
 
-    @GetMapping("/")
+    /*@GetMapping("/")
     public String index(Model model) {
         // 获取所有文件夹（用于左侧列表）
         List<WatchedFolder> folders = folderService.getAllFolders();
@@ -51,6 +55,26 @@ public class HomeController {
         model.addAttribute("todayDiaryCount", 0);
         model.addAttribute("oldestDiaryDate", null);
 
-        return "index3";
+        return "index";
+    }*/
+
+    @GetMapping("/")
+    public String index(Model model) {
+        // 获取活跃目录列表
+        List<MonitoredDirectory> directories = dossierService.getAllDirectories();
+        model.addAttribute("directories", directories);
+
+        // 获取手选文件列表
+        model.addAttribute("manualFiles", dossierService.getManualFiles());
+
+        // 获取档案库列表（待实现）
+        model.addAttribute("archivedDirectories", List.of());
+        model.addAttribute("archivedFiles", List.of());
+
+        // 统计数据（首页卡片用，可后续扩展）
+        model.addAttribute("folderCount", directories.size());
+        model.addAttribute("manualFileCount", dossierService.getManualFiles().size());
+
+        return "index_1";
     }
 }

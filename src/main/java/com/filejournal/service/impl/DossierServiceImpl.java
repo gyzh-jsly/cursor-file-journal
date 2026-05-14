@@ -143,13 +143,27 @@ public class DossierServiceImpl implements DossierService {
 
         if (latest != null) {
             long minutes = Duration.between(latest.getRecordedAt(), now).toMinutes();
+            // 判断是否跨天（latest.getRecordedAt() 是当前修订记录的第一次保存时间）
             boolean sameDay = latest.getRecordedAt().toLocalDate().equals(now.toLocalDate());
 
+            /*
+            //以下逻辑是前一次修改时间和后一次修改时间比较（逻辑错误）：
             if (!sameDay) {
                 // 跨天 → 强制新记录
             } else if (minutes <= MERGE_WINDOW_MINUTES) {
                 // 同一天 + 45分钟内 → 覆盖时间
                 latest.setRecordedAt(now);
+                latest.setFileSize(fileSize);
+                revisionMapper.update(latest);
+                return latest;
+            }*/
+
+            //正确逻辑：以当前修订记录的第一次保存时间为锚点；不超过45分钟，时间不变。
+            if (sameDay && minutes <= MERGE_WINDOW_MINUTES) {
+                System.out.println("enter？");
+                // 同一天 + 45分钟内 → 合并
+                // 注意：这里应该更新的是文件大小，而不是时间
+                // 时间保持不变，始终是第一次保存的时间
                 latest.setFileSize(fileSize);
                 revisionMapper.update(latest);
                 return latest;
@@ -160,7 +174,7 @@ public class DossierServiceImpl implements DossierService {
         FileRevision rev = new FileRevision();
         rev.setFileId(fileId);
         rev.setVersionNumber(latest == null ? 1 : latest.getVersionNumber() + 1);
-        rev.setRecordedAt(now);
+        rev.setRecordedAt(now);   // 记录第一次保存的时间
         rev.setFileSize(fileSize);
         revisionMapper.insert(rev);
         return rev;
@@ -197,5 +211,10 @@ public class DossierServiceImpl implements DossierService {
     @Override
     public List<FileNote> getFileLevelNotes(Integer fileId) {
         return noteMapper.selectFileLevelNotes(fileId);
+    }
+
+    @Override
+    public DossierFile getFileById(Integer id) {
+        return fileMapper.selectById(id);
     }
 }

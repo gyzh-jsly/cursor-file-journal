@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.filejournal.mapper.MonitoredDirectoryMapper">
+
+    <insert id="insert" parameterType="com.filejournal.model.MonitoredDirectory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO monitored_directories (dir_path, dir_name, status, created_at)
+        VALUES (#{dirPath}, #{dirName}, #{status}, #{createdAt})
+    </insert>
+
+    <select id="selectById" resultType="com.filejournal.model.MonitoredDirectory">
+        SELECT * FROM monitored_directories WHERE id = #{id}
+    </select>
+
+    <select id="selectByPath" resultType="com.filejournal.model.MonitoredDirectory">
+        SELECT * FROM monitored_directories WHERE dir_path = #{dirPath}
+    </select>
+
+    <select id="selectAll" resultType="com.filejournal.model.MonitoredDirectory">
+        SELECT * FROM monitored_directories ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByStatus" resultType="com.filejournal.model.MonitoredDirectory">
+        SELECT * FROM monitored_directories WHERE status = #{status}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE monitored_directories SET status = #{status}
+        <if test="status == 'ARCHIVED'">, archived_at = NOW()</if>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM monitored_directories WHERE id = #{id}
+    </delete>
+</mapper>

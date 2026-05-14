@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>写日记 · 年历</title>
+</head>
+<body>  <!-- 添加 body 标签 -->
+<div class="calendar-container" th:fragment="calendar-container" style="height: 100%; display: flex; flex-direction: column; padding: 20px; background: #fafbfc;">
+
+    <!-- 年视图 -->
+    <div id="yearView" class="calendar-view" style="display: flex; flex-direction: column; height: 100%;">
+        <!-- 年视图工具栏 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="prevYearBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <select id="yearSelectForYearView" class="form-select form-select-sm" style="width: 100px;"></select>
+                <button id="nextYearBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <button id="writeDiaryBtnFromYear" class="btn btn-primary btn-sm" type="button">
+                <i class="bi bi-plus-lg me-1"></i>写日记
+            </button>
+        </div>
+        <div id="yearGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;"></div>
+    </div>
+
+    <!-- 月视图（默认隐藏） -->
+    <div id="monthView" class="calendar-view" style="display: none; flex-direction: column; height: 100%;">
+        <!-- 月视图工具栏 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <button id="backToYearBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                    <i class="bi bi-arrow-left me-1"></i>返回
+                </button>
+                <button id="prevMonthBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <select id="yearSelectForMonthView" class="form-select form-select-sm" style="width: 100px;"></select>
+                <select id="monthSelect" class="form-select form-select-sm" style="width: 80px;">
+                    <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                    <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                    <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                    <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+                </select>
+                <button id="nextMonthBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <button id="writeDiaryBtnFromMonth" class="btn btn-primary btn-sm" type="button">
+                <i class="bi bi-plus-lg me-1"></i>写日记
+            </button>
+        </div>
+        <!-- 星期标题 -->
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px;">
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">一</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">二</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">三</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">四</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">五</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">六</div>
+            <div style="text-align: center; font-weight: 500; color: #6c757d; padding: 8px;">日</div>
+        </div>
+        <div id="monthGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;"></div>
+    </div>
+</div>
+</body>
+</html>

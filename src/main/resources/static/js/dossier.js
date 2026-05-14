@@ -41,7 +41,11 @@ function switchTab(name) {
     document.getElementById('pane-' + name)?.classList.add('active');
 }
 
+let autoRefreshTimer = null;
 function closeTab(event, name) {
+    // 清除旧定时器
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
     event.stopPropagation();
     // 移除标签
     const tab = document.querySelector(`.tab-item[data-tab="${name}"]`);
@@ -97,12 +101,12 @@ window.openFileDetailTab = function(fileId, fileName) {
             pane.innerHTML = html;
             // 手动执行内联脚本
             //不再手动执行脚本，Thymeleaf 已渲染好数据
-            /*const scripts = pane.querySelectorAll('script');
+            const scripts = pane.querySelectorAll('script');
             scripts.forEach(s => {
                 const newScript = document.createElement('script');
                 newScript.textContent = s.textContent;
                 document.body.appendChild(newScript);
-            });*/
+            });
         });
 };
 /*--index_1>*/
@@ -136,6 +140,9 @@ function loadDirectoryList() {
 
 // 选中目录并加载文件列表
 function selectDir(el, dirId) {
+    // 清除旧定时器
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
     document.querySelectorAll('.dir-item').forEach(d => d.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('filePanelHeader').innerHTML =
@@ -161,6 +168,30 @@ function selectDir(el, dirId) {
                 </div>
             `).join('');
         });
+
+    // 每 5 秒自动刷新文件列表
+    autoRefreshTimer = setInterval(() => {
+        fetch('/dossier/file/list?dirId=' + dirId)
+            .then(res => res.json())
+            .then(files => {
+                el.querySelector('.file-count').textContent = files.length + ' 个文件';
+                const fileList = document.getElementById('fileList');
+                if (files.length === 0) {
+                    fileList.innerHTML = '<div style="padding: 40px; color: var(--muted); text-align: center;">此目录下暂无文件</div>';
+                    return;
+                }
+                fileList.innerHTML = files.map(f => `
+                    <div class="file-item">
+                        <span class="file-name" onclick="openFileDetailTab(${f.id}, '${f.fileName}')">${f.fileName}</span>
+                        <div class="file-actions">
+                            <a href="#" onclick="event.stopPropagation();">备注</a>
+                            <a href="#" onclick="event.stopPropagation();">修订记录</a>
+                            <a href="#" onclick="event.stopPropagation();">删除</a>
+                        </div>
+                    </div>
+                `).join('');
+            });
+    }, 5000);
 }
 
 // 添加目录
@@ -186,7 +217,7 @@ function addDirectory() {
 
 
 /*<file-detail*/
-let currentFileId = null;
+//let currentFileId = null;
 
 function addRevisionNote(revId) {
     document.getElementById('noteRevisionSelect').value = revId;
@@ -194,21 +225,23 @@ function addRevisionNote(revId) {
 }
 
 function submitNote() {
-    console.log('submitNote 被调用');
     // 从标签页 ID 中提取 fileId（标签页格式为 pane-file-{id}）
     const activePane = document.querySelector('.tab-pane.active');
     const fileId = activePane ? activePane.id.replace('pane-file-', '') : null;
+    console.log('submitNote 被调用'+fileId);
 
     if (!fileId) {
         alert('无法获取文件ID');
         return;
     }
 
-    const content = document.getElementById('newNoteContent').value.trim();
+    // const content = document.getElementById('newNoteContent').value.trim();
+    const content = activePane.querySelector('#newNoteContent').value.trim();
     console.log('content:', content);
     if (!content) { alert('请输入备注内容'); return; }
 
-    const revisionSelect = document.getElementById('noteRevisionSelect');
+    // const revisionSelect = document.getElementById('noteRevisionSelect');
+    const revisionSelect = activePane.querySelector('#noteRevisionSelect');
     const revisionId = (revisionSelect && revisionSelect.value) ? revisionSelect.value : null;
     console.log('revisionId:', revisionId);
 
@@ -226,16 +259,36 @@ function submitNote() {
             console.log('提交成功:', data);
             document.getElementById('newNoteContent').value = '';
             document.getElementById('noteRevisionSelect').value = '';
-            refreshNotes(currentFileId);
+            refreshNotes(fileId);
         })
         .catch(err => {
             console.error('提交失败:', err);
             alert('添加失败：' + err.message);
         });
 }
+function refreshNotes(fileId) {
+    fetch('/dossier/file/' + fileId + '/detail-data')
+        .then(res => res.json())
+        .then(data => {
+            const activePane = document.querySelector('.tab-pane.active');
+            const noteArea = activePane.querySelector('#noteArea');
+            if (!noteArea) return;
+            const notes = data.notes || data || [];
+            if (!Array.isArray(notes) || notes.length === 0) {
+                noteArea.innerHTML = '<div style="color: var(--muted); padding: 20px; text-align: center;">暂无备注</div>';
+            } else {
+                noteArea.innerHTML = notes.map(n => `
+                    <div class="note-item">
+                        <div>${n.content}</div>
+                        <div class="note-meta">${new Date(n.createdAt).toLocaleString()} ${n.revisionId ? '· 关联修订' : '· 文件级备注'}</div>
+                    </div>
+                `).join('');
+            }
+        });
+}
 
-function refreshNotes() {
-    fetch('/dossier/file/' + currentFileId + '/detail-data')
+/*function refreshNotes(fileId) {
+    fetch('/dossier/file/' + fileId + '/detail-data')
         .then(res => res.json())
         .then(data => {
             // 重建备注列表
@@ -257,7 +310,7 @@ function refreshNotes() {
         .catch(err => {
             console.error('刷新备注失败:', err);
         });
-}
+}*/
 /*--file-detail>*/
 
 
@@ -529,60 +582,6 @@ window.openWriteDiaryTab = function() {
         .then(html => { pane.innerHTML = html; });
 };
 /*--calendar>*/
-
-/*<month-calendar*/
-//支持年历 → 月历的跳转，需要挂载一个全局函数：
-/*window.openMonthCalendar = function(year, month) {
-    // 直接打开 /diary/calendar?year=xxxx&month=xx
-    const url = '/diary/calendar?year=' + year + '&month=' + month;
-    // 在新标签页中打开月历（或者替换当前标签页内容）
-    const tabName = 'month-' + year + '-' + month;
-    let existing = document.querySelector(`.tab-item[data-tab="${tabName}"]`);
-    if (existing) {
-        switchTab(tabName);
-        return;
-    }
-    const tabNav = document.getElementById('tabNav');
-    const tab = document.createElement('span');
-    tab.className = 'tab-item';
-    tab.setAttribute('data-tab', tabName);
-    tab.innerHTML = `📅 ${year}年${month}月 <span class="tab-close" onclick="closeTab(event, '${tabName}')">&times;</span>`;
-    tab.onclick = function() { switchTab(tabName); };
-    tabNav.appendChild(tab);
-
-    const tabContent = document.getElementById('tabContent');
-    const pane = document.createElement('div');
-    pane.className = 'tab-pane';
-    pane.id = 'pane-' + tabName;
-    pane.innerHTML = `<div style="padding: 20px; color: var(--muted);">加载月历...</div>`;
-    tabContent.appendChild(pane);
-
-    switchTab(tabName);
-
-    fetch(url)
-        .then(res => res.text())
-        .then(html => { pane.innerHTML = html; });
-};
-
-var year = /!*[[${year}]]*!/ 2026;
-var month = /!*[[${month}]]*!/ 5;
-fetch(`/diary/calendar/month?year=${year}&month=${month}`)
-    .then(res => res.json())
-    .then(data => {
-        const grid = document.getElementById('monthGrid');
-        // 简化渲染：只显示日期格子
-        for (let d = 1; d <= new Date(year, month, 0).getDate(); d++) {
-            const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const cnt = data[ds] || 0;
-            const cell = document.createElement('div');
-            cell.className = 'day-cell' + (cnt > 0 ? ' has-diary' : '');
-            cell.innerHTML = `${d}${cnt > 0 ? `<span style="font-size:0.65rem;color:#4a90e2;">·${cnt}</span>` : ''}`;
-            if (cnt > 0) cell.onclick = () => alert(`日期:${ds}`);
-            grid.appendChild(cell);
-        }
-    });*/
-/*--month-calendar>*/
-
 
 /*<write-diary*/
 function publishDiary() {
