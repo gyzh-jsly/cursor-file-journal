@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/file_journal?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
+    username: 123          # 改成你的 MySQL 用户名
+    password: 123        # 改成你的 MySQL 密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  redis:
+    host: localhost   #这里填你的redis地址
+    port: 6379
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml          # Mapper XML 文件位置
+  type-aliases-package: com.filejournal.model       # 实体类别名包
+  configuration:
+    map-underscore-to-camel-case: true              # 自动映射下划线字段到驼峰属性
